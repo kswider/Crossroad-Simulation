@@ -10,13 +10,15 @@
 -author("motek").
 
 -behaviour(supervisor).
+-include("../include/records.hrl").
 
 %% API
--export([start_link/0]).
+-export([start_link/1]).
 
 %% Supervisor callbacks
 -export([init/1]).
 
+-export([start_simulation/1,stop_simulation/0,generate_cars/1,generate_pedestrians/1]).
 -define(SERVER, ?MODULE).
 
 %%%===================================================================
@@ -31,8 +33,8 @@
 %%--------------------------------------------------------------------
 -spec(start_link() ->
   {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
-start_link() ->
-  supervisor:start_link({local, ?SERVER}, ?MODULE, []).
+start_link(WorldParameters) ->
+  supervisor:start_link({local, ?SERVER}, ?MODULE, WorldParameters).
 
 %%%===================================================================
 %%% Supervisor callbacks
@@ -55,7 +57,9 @@ start_link() ->
   }} |
   ignore |
   {error, Reason :: term()}).
-init([]) ->
+
+init(WorldParameters) ->
+  Args = [ WorldParameters ],
   RestartStrategy = one_for_one,
   MaxRestarts = 1000,
   MaxSecondsBetweenRestarts = 3600,
@@ -66,11 +70,37 @@ init([]) ->
   Shutdown = 2000,
   Type = worker,
 
-  AChild = {'AName', {'AModule', start_link, []},
-    Restart, Shutdown, Type, ['AModule']},
+  SimulationController = {
+    simulation_controller,
+    {simulation_controller,start_link,Args},
+    Restart,
+    Shutdown,
+    Type,
+    [simulation_controller]
+  },
+  EventStream = {
+    simulation_event_stream,
+    {simulation_event_stream,start_link,[]},
+    Restart,
+    Shutdown,
+    Type,
+    [simulation_event_stream]
+  },
+  SimulationsSupervisor = {
+    simulations_supervisor,
+    {simulations_supervisor, start_link,Args},
+    Restart,
+    brutal_kill,
+    supervisor,
+    [simulations_supervisor]
+  },
 
-  {ok, {SupFlags, [AChild]}}.
+  {ok, {SupFlags, [EventStream, SimulationController, SimulationsSupervisor]}}.
 
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+start_simulation(WorldParameters) -> 3.
+stop_simulation() -> 3.
+generate_pedestrians(Amount) -> 3.
+generate_cars(Amount) -> 3.

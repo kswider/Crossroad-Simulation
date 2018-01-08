@@ -10,6 +10,7 @@
 -author("Krzysiek").
 
 -behaviour(application).
+-include("../include/records.hrl").
 
 %% Application callbacks
 -export([start/2,
@@ -19,6 +20,19 @@
 %%% Application callbacks
 %%%===================================================================
 
+
+read_world_parameters_from_settings() ->
+  MainLightsTime = application:get_env(crossroad_simulation, main_light_time, 60),
+  SubLightsTime = application:get_env(crossroad_simulation, sub_light_time, 60),
+  CarsStartAmmount = application:get_env(crossroad_simulation, cars_start_amount,3),
+  PedestianStartAmmount = application:get_env(crossroad_simulation, pedestrian_start_amount,1)
+
+  #world_parameters{
+    main_light_time = MainLightsTime,
+    sub_light_time = SubLightsTime,
+    cars_start_amount = CarsStartAmmount,
+    pedestrian_start_amount = PedestianStartAmmount
+  }.
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
@@ -36,12 +50,8 @@
   {ok, pid(), State :: term()} |
   {error, Reason :: term()}).
 start(_StartType, _StartArgs) ->
-  case 'TopSupervisor':start_link() of
-    {ok, Pid} ->
-      {ok, Pid};
-    Error ->
-      Error
-  end.
+  Parameters = read_world_parameters_from_settings(),
+  simulation_main_supervisor:start_link(Parameters).
 
 %%--------------------------------------------------------------------
 %% @private
