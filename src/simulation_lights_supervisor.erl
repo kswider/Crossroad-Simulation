@@ -31,8 +31,8 @@
 %%--------------------------------------------------------------------
 -spec(start_link() ->
   {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
-start_link() ->
-  supervisor:start_link({local, ?SERVER}, ?MODULE, []).
+start_link(WorldParameters) ->
+  supervisor:start_link({local, ?SERVER}, ?MODULE, WorldParameters).
 
 %%%===================================================================
 %%% Supervisor callbacks
@@ -55,7 +55,9 @@ start_link() ->
   }} |
   ignore |
   {error, Reason :: term()}).
-init([]) ->
+init(State) ->
+  simulation_event_stream:component_ready(?MODULE),
+
   RestartStrategy = one_for_one,
   MaxRestarts = 1000,
   MaxSecondsBetweenRestarts = 3600,
@@ -66,11 +68,13 @@ init([]) ->
   Shutdown = 2000,
   Type = worker,
 
-  AChild = {'AName', {'AModule', start_link, []},
-    Restart, Shutdown, Type, ['AModule']},
 
-  {ok, {SupFlags, [AChild]}}.
+  %TODO: Check if SupFlags is ok (in rabbits restarts are loaded from world parameters, i dont know why :()
+  {ok, {SupFlags, []}}.
 
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
+start_lights(WorldParameters) -> todo.
+stop_lights() -> common_defs:stop_children(?MODULE).

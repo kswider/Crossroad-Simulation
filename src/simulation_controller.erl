@@ -78,24 +78,32 @@ init(WorldParameters) ->
   {noreply, NewState :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term(), Reply :: term(), NewState :: #state{}} |
   {stop, Reason :: term(), NewState :: #state{}}).
+
 handle_call(start_simulation, _From, {stopped,WorldParameters}) ->
   simulation_main_supervisor:start_simulation(WorldParameters),
   {reply, started, {started,WorldParameters}};
+
 handle_call(start_simulation, _From, {started,WorldParameters}) ->
   {reply, already_started, {started,WorldParameters}};
+
 handle_call(stop_simulation, _From, {started,WorldParameters}) ->
   simulation_main_supervisor:stop_simulation(),
   {reply, stopped, {stopped,WorldParameters}};
+
 handle_call(stop_simulation, _From, {stopped,WorldParameters}) ->
   {reply, already_stopped, {stopped,WorldParameters}};
+
 handle_call({generate_pedestrians, Amount}, _From, {started,WorldParameters}) ->
   simulation_main_supervisor:generate_pedestrians(Amount),
   {reply, pedestrians_generated, {started,WorldParameters}};
+
 handle_call({generate_pedestrians, Amount}, _From, {stopped,WorldParameters}) ->
   {reply, pedestrians_not_generated, {stopped,WorldParameters}};
+
 handle_call({generate_cars, Amount}, _From, {started,WorldParameters}) ->
   simulation_main_supervisor:generate_cars(Amount),
   {reply, cars_generated, {started,WorldParameters}};
+
 handle_call({generate_cars, Amount}, _From, {stopped,WorldParameters}) ->
   {reply, cars_not_generated, {stopped,WorldParameters}}.
 

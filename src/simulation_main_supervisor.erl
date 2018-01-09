@@ -100,7 +100,7 @@ init(WorldParameters) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-start_simulation(WorldParameters) -> 3.
-stop_simulation() -> 3.
-generate_pedestrians(Amount) -> 3.
-generate_cars(Amount) -> 3.
+start_simulation(WorldParameters) -> simulations_supervisor:start_simulation(WorldParameters).
+stop_simulation() -> simulations_supervisor:stop_simulation().
+generate_pedestrians(Amount) -> simulations_supervisor:generate_pedestrians(Amount).
+generate_cars(Amount) -> simulations_supervisor:generate_cars(Amount).

@@ -10,9 +10,9 @@
 -author("motek").
 
 -behaviour(gen_server).
-
+-include("../include/records.hrl").
 %% API
--export([start_link/0]).
+-export([start_link/1]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -38,8 +38,8 @@
 %%--------------------------------------------------------------------
 -spec(start_link() ->
   {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
-start_link() ->
-  gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+start_link(WorldParameters) ->
+  gen_server:start_link({local, ?SERVER}, ?MODULE, WorldParameters, []).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -59,7 +59,9 @@ start_link() ->
 -spec(init(Args :: term()) ->
   {ok, State :: #state{}} | {ok, State :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term()} | ignore).
-init([]) ->
+init(WorldParameters) ->
+  State = {},
+  simulation_event_stream:notify(lights,started,State),
   {ok, #state{}}.
 
 %%--------------------------------------------------------------------
@@ -124,7 +126,8 @@ handle_info(_Info, State) ->
 %%--------------------------------------------------------------------
 -spec(terminate(Reason :: (normal | shutdown | {shutdown, term()} | term()),
     State :: #state{}) -> term()).
-terminate(_Reason, _State) ->
+terminate(_Reason, State) ->
+  simulation_event_stream:notify(lights,stopped,State),
   ok.
 
 %%--------------------------------------------------------------------

@@ -12,8 +12,8 @@
 -behaviour(supervisor).
 
 %% API
--export([start_link/0]).
-
+-export([start_link/1,start_simulation/1,stop_simulation/0,generate_cars/1,generate_pedestrians/1]).
+-include("../include/records.hrl").
 %% Supervisor callbacks
 -export([init/1]).
 
@@ -31,8 +31,8 @@
 %%--------------------------------------------------------------------
 -spec(start_link() ->
   {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
-start_link() ->
-  supervisor:start_link({local, ?SERVER}, ?MODULE, []).
+start_link(WorldParameters) ->
+  supervisor:start_link({local, ?SERVER}, ?MODULE, [WorldParameters]).
 
 %%%===================================================================
 %%% Supervisor callbacks
@@ -55,7 +55,9 @@ start_link() ->
   }} |
   ignore |
   {error, Reason :: term()}).
-init([]) ->
+init(WorldParameters) ->
+  Args = [WorldParameters],
+
   RestartStrategy = one_for_one,
   MaxRestarts = 1000,
   MaxSecondsBetweenRestarts = 3600,
@@ -63,14 +65,34 @@ init([]) ->
   SupFlags = {RestartStrategy, MaxRestarts, MaxSecondsBetweenRestarts},
 
   Restart = permanent,
-  Shutdown = 2000,
-  Type = worker,
+  Shutdown = brutal_kill,
+  Type = supervisor,
 
-  AChild = {'AName', {'AModule', start_link, []},
-    Restart, Shutdown, Type, ['AModule']},
+  TrafficSupervisor = {
+    traffic_supervisor,
+    {simulation_traffic_supervisor, start_link, Args},
+    Restart, Shutdown, Type,
+    [ simulation_traffic_supervisor ]
+  },
+  PedestriansSupervisor = {
+    pedestrians_supervisor,
+    {simulation_pedestrians_supervisor, start_link, Args},
+    Restart, Shutdown, Type,
+    [ simulation_pedestrians_supervisor ]
+  },
+  LightsSupervisor = {
+    lights_supervisor,
+    {simulation_lights_supervisor, start_link, Args},
+    Restart, Shutdown, Type,
+    [ simulation_lights_supervisor ]
+  },
 
-  {ok, {SupFlags, [AChild]}}.
+  {ok, {SupFlags, [TrafficSupervisor,PedestriansSupervisor,LightsSupervisor]}}.
 
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+start_simulation(WorldParameters) -> 3.
+stop_simulation() -> 3.
+generate_pedestrians(Amount) -> 3.
+generate_cars(Amount) -> 3.
