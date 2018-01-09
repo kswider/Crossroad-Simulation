@@ -12,7 +12,7 @@
 -behaviour(supervisor).
 
 %% API
--export([start_link/0]).
+-export([start_link/1,start_lights/1,stop_lights/0]).
 
 %% Supervisor callbacks
 -export([init/1]).
@@ -22,6 +22,11 @@
 %%%===================================================================
 %%% API functions
 %%%===================================================================
+start_lights(WorldParameters) ->
+  generate_traffic_lights(WorldParameters,4),
+  generate_pedestrian_lights(WorldParameters,4).
+
+stop_lights() -> common_defs:stop_children(?MODULE).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -29,7 +34,7 @@
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec(start_link() ->
+-spec(start_link(WorldParameters::any()) ->
   {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
 start_link(WorldParameters) ->
   supervisor:start_link({local, ?SERVER}, ?MODULE, WorldParameters).
@@ -76,5 +81,20 @@ init(State) ->
 %%% Internal functions
 %%%===================================================================
 
-start_lights(WorldParameters) -> todo.
-stop_lights() -> common_defs:stop_children(?MODULE).
+generate_traffic_lights(WorldParameters,0) -> done;
+generate_traffic_lights(WorldParameters,Amount) ->
+  Light = { {traffic_light, Amount},
+    {light_entity, start_link, [ WorldParameters ]},
+    temporary, brutal_kill, worker,
+    [ light_entity ]},
+  supervisor:start_child(?MODULE, Light),
+  generate_traffic_lights(WorldParameters,Amount-1).
+
+generate_pedestrian_lights(WorldParameters,0) -> done;
+generate_pedestrian_lights(WorldParameters,Amount) ->
+  Light = { {pedestrian_light, Amount},
+    {light_entity, start_link, [ WorldParameters ]},
+    temporary, brutal_kill, worker,
+    [ light_entity ]},
+  supervisor:start_child(?MODULE, Light),
+  generate_pedestrian_lights(WorldParameters,Amount-1).

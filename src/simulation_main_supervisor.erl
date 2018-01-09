@@ -24,14 +24,17 @@
 %%%===================================================================
 %%% API functions
 %%%===================================================================
-
+start_simulation(WorldParameters) -> simulations_supervisor:start_simulation(WorldParameters).
+stop_simulation() -> simulations_supervisor:stop_simulation().
+generate_pedestrians(Amount) -> simulations_supervisor:generate_pedestrians(Amount).
+generate_cars(Amount) -> simulations_supervisor:generate_cars(Amount).
 %%--------------------------------------------------------------------
 %% @doc
 %% Starts the supervisor
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec(start_link() ->
+-spec(start_link(WorldParameters::any()) ->
   {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
 start_link(WorldParameters) ->
   supervisor:start_link({local, ?SERVER}, ?MODULE, WorldParameters).
@@ -100,7 +103,3 @@ init(WorldParameters) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-start_simulation(WorldParameters) -> simulations_supervisor:start_simulation(WorldParameters).
-stop_simulation() -> simulations_supervisor:stop_simulation().
-generate_pedestrians(Amount) -> simulations_supervisor:generate_pedestrians(Amount).
-generate_cars(Amount) -> simulations_supervisor:generate_cars(Amount).

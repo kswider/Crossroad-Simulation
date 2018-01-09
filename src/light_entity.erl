@@ -36,7 +36,7 @@
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec(start_link() ->
+-spec(start_link(WorldParameters::any()) ->
   {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
 start_link(WorldParameters) ->
   gen_server:start_link({local, ?SERVER}, ?MODULE, WorldParameters, []).
@@ -62,7 +62,7 @@ start_link(WorldParameters) ->
 init(WorldParameters) ->
   State = {},
   simulation_event_stream:notify(lights,started,State),
-  {ok, #state{}}.
+  {ok, State}.
 
 %%--------------------------------------------------------------------
 %% @private

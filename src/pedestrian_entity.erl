@@ -12,7 +12,7 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/0]).
+-export([start_link/1]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -36,10 +36,10 @@
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec(start_link() ->
+-spec(start_link(WorldParameters::any()) ->
   {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
-start_link() ->
-  gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+start_link(WorldParameters) ->
+  gen_server:start_link({local, ?SERVER}, ?MODULE, WorldParameters, []).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -59,8 +59,10 @@ start_link() ->
 -spec(init(Args :: term()) ->
   {ok, State :: #state{}} | {ok, State :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term()} | ignore).
-init([]) ->
-  {ok, #state{}}.
+init(WorldParameters) ->
+  State = {},
+  simulation_event_stream:notify(pedestrian,spawned,State),
+  {ok, State}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -124,7 +126,8 @@ handle_info(_Info, State) ->
 %%--------------------------------------------------------------------
 -spec(terminate(Reason :: (normal | shutdown | {shutdown, term()} | term()),
     State :: #state{}) -> term()).
-terminate(_Reason, _State) ->
+terminate(_Reason, State) ->
+  simulation_event_stream:notify(pedestrian,disappeared,State),
   ok.
 
 %%--------------------------------------------------------------------

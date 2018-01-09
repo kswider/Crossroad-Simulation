@@ -12,7 +12,7 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/1]).
+-export([start_link/1, start_simulation/0,stop_simulation/0,generate_cars/1,generate_pedestrians/1]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -30,20 +30,32 @@
 %%% API
 %%%===================================================================
 
+start_simulation() ->
+  gen_server:call(?MODULE, start_simulation).
+
+stop_simulation() ->
+  gen_server:call(?MODULE, stop_simulation).
+
+generate_cars(Amount) ->
+  gen_server:call(?MODULE, {generate_cars,Amount}).
+
+generate_pedestrians(Amount) ->
+  gen_server:call(?MODULE, {generate_pedestrians,Amount}).
+
 %%--------------------------------------------------------------------
 %% @doc
 %% Starts the server
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec(start_link() ->
+-spec(start_link(WorldParameters::any()) ->
   {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
 start_link(WorldParameters) ->
   gen_server:start_link({local, ?MODULE}, ?MODULE, WorldParameters, []).
 
 %%%===================================================================
 %%% gen_server callbacks
-%%%===================================================================
+%%%=================================================================
 
 %%--------------------------------------------------------------------
 %% @private

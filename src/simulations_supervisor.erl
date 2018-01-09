@@ -22,14 +22,25 @@
 %%%===================================================================
 %%% API functions
 %%%===================================================================
-
+start_simulation(WorldParameters) ->
+  simulation_lights_supervisor:start_lights(WorldParameters),
+  simulation_pedestrians_supervisor:generate_pedestrians(WorldParameters,3),
+  simulation_traffic_supervisor:generate_cars(WorldParameters,4),
+  done.
+stop_simulation() ->
+  simulation_lights_supervisor:stop_lights(),
+  simulation_pedestrians_supervisor:kill_children(),
+  simulation_traffic_supervisor:kill_children(),
+  done.
+generate_pedestrians(Amount) -> 3.
+generate_cars(Amount) -> 3.
 %%--------------------------------------------------------------------
 %% @doc
 %% Starts the supervisor
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec(start_link() ->
+-spec(start_link(WorldParameters::any()) ->
   {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
 start_link(WorldParameters) ->
   supervisor:start_link({local, ?SERVER}, ?MODULE, [WorldParameters]).
@@ -92,7 +103,3 @@ init(WorldParameters) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-start_simulation(WorldParameters) -> 3.
-stop_simulation() -> 3.
-generate_pedestrians(Amount) -> 3.
-generate_cars(Amount) -> 3.
