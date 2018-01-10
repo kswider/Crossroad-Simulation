@@ -24,8 +24,8 @@
 %%%===================================================================
 start_simulation(WorldParameters) ->
   simulation_lights_supervisor:start_lights(WorldParameters),
-  simulation_pedestrians_supervisor:generate_pedestrians(WorldParameters,3),
-  simulation_traffic_supervisor:generate_cars(WorldParameters,4),
+  %simulation_pedestrians_supervisor:generate_pedestrians(WorldParameters,3),
+  %simulation_traffic_supervisor:generate_cars(WorldParameters,4),
   done.
 stop_simulation() ->
   simulation_lights_supervisor:stop_lights(),
@@ -79,18 +79,18 @@ init(WorldParameters) ->
   Shutdown = brutal_kill,
   Type = supervisor,
 
-  TrafficSupervisor = {
-    traffic_supervisor,
-    {simulation_traffic_supervisor, start_link, Args},
-    Restart, Shutdown, Type,
-    [ simulation_traffic_supervisor ]
-  },
-  PedestriansSupervisor = {
-    pedestrians_supervisor,
-    {simulation_pedestrians_supervisor, start_link, Args},
-    Restart, Shutdown, Type,
-    [ simulation_pedestrians_supervisor ]
-  },
+  %TrafficSupervisor = {
+  %  traffic_supervisor,
+  %  {simulation_traffic_supervisor, start_link, Args},
+  %  Restart, Shutdown, Type,
+  %  [ simulation_traffic_supervisor ]
+  %},
+  %PedestriansSupervisor = {
+  %  pedestrians_supervisor,
+  %  {simulation_pedestrians_supervisor, start_link, Args},
+  %  Restart, Shutdown, Type,
+  %  [ simulation_pedestrians_supervisor ]
+  %},
   LightsSupervisor = {
     lights_supervisor,
     {simulation_lights_supervisor, start_link, Args},
@@ -98,7 +98,7 @@ init(WorldParameters) ->
     [ simulation_lights_supervisor ]
   },
 
-  {ok, {SupFlags, [TrafficSupervisor,PedestriansSupervisor,LightsSupervisor]}}.
+  {ok, {SupFlags, [LightsSupervisor]}}.%[TrafficSupervisor,PedestriansSupervisor,LightsSupervisor]}}.
 
 %%%===================================================================
 %%% Internal functions

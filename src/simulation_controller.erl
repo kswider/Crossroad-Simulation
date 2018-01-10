@@ -72,7 +72,6 @@ start_link(WorldParameters) ->
   {ok, State :: #state{}} | {ok, State :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term()} | ignore).
 init(WorldParameters) ->
-  %TODO: Send info to event stream
   {ok, {stopped,WorldParameters}}.
 
 %%--------------------------------------------------------------------

@@ -23,8 +23,11 @@
 %%% API functions
 %%%===================================================================
 start_lights(WorldParameters) ->
-  generate_traffic_lights(WorldParameters,4),
-  generate_pedestrian_lights(WorldParameters,4).
+  Light = { {lights},
+    {light_entity, start_link, [ WorldParameters ]},
+    temporary, brutal_kill, worker,
+    [ light_entity ]},
+  supervisor:start_child(?MODULE, Light).
 
 stop_lights() -> common_defs:stop_children(?MODULE).
 
@@ -80,21 +83,3 @@ init(State) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-
-generate_traffic_lights(WorldParameters,0) -> done;
-generate_traffic_lights(WorldParameters,Amount) ->
-  Light = { {traffic_light, Amount},
-    {light_entity, start_link, [ WorldParameters ]},
-    temporary, brutal_kill, worker,
-    [ light_entity ]},
-  supervisor:start_child(?MODULE, Light),
-  generate_traffic_lights(WorldParameters,Amount-1).
-
-generate_pedestrian_lights(WorldParameters,0) -> done;
-generate_pedestrian_lights(WorldParameters,Amount) ->
-  Light = { {pedestrian_light, Amount},
-    {light_entity, start_link, [ WorldParameters ]},
-    temporary, brutal_kill, worker,
-    [ light_entity ]},
-  supervisor:start_child(?MODULE, Light),
-  generate_pedestrian_lights(WorldParameters,Amount-1).

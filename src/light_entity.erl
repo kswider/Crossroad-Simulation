@@ -4,146 +4,92 @@
 %%% @doc
 %%%
 %%% @end
-%%% Created : 08. Jan 2018 15:08
+%%% Created : 10. Jan 2018 20:35
 %%%-------------------------------------------------------------------
 -module(light_entity).
 -author("motek").
 
--behaviour(gen_server).
+-behaviour(gen_statem).
+
 -include("../include/records.hrl").
 %% API
 -export([start_link/1]).
+-export([red/3,green/3,yellow/3,not_started/3]).
 
-%% gen_server callbacks
--export([init/1,
-  handle_call/3,
-  handle_cast/2,
-  handle_info/2,
-  terminate/2,
-  code_change/3]).
+%% gen_statem callbacks
+-export([
+  init/1,
+  handle_event/3,
+  terminate/3,
+  code_change/4,
+  callback_mode/0
+]).
 
 -define(SERVER, ?MODULE).
 
 -record(state, {}).
 
-%%%===================================================================
-%%% API
-%%%===================================================================
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Starts the server
-%%
-%% @end
-%%--------------------------------------------------------------------
--spec(start_link(WorldParameters::any()) ->
-  {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
 start_link(WorldParameters) ->
-  gen_server:start_link({local, ?SERVER}, ?MODULE, WorldParameters, []).
+  gen_statem:start_link({local,?SERVER}, ?MODULE, WorldParameters, []).
 
-%%%===================================================================
-%%% gen_server callbacks
-%%%===================================================================
-
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Initializes the server
-%%
-%% @spec init(Args) -> {ok, State} |
-%%                     {ok, State, Timeout} |
-%%                     ignore |
-%%                     {stop, Reason}
-%% @end
-%%--------------------------------------------------------------------
--spec(init(Args :: term()) ->
-  {ok, State :: #state{}} | {ok, State :: #state{}, timeout() | hibernate} |
-  {stop, Reason :: term()} | ignore).
 init(WorldParameters) ->
-  State = {},
-  simulation_event_stream:notify(lights,started,State),
-  {ok, State}.
+  Data = #light{pid = self,main_road = horizontal, waiting = [], world_parameters = WorldParameters},
+  erlang:start_timer(100, self(), start),
+  {ok,not_started,Data}.
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Handling call messages
-%%
-%% @end
-%%--------------------------------------------------------------------
--spec(handle_call(Request :: term(), From :: {pid(), Tag :: term()},
-    State :: #state{}) ->
-  {reply, Reply :: term(), NewState :: #state{}} |
-  {reply, Reply :: term(), NewState :: #state{}, timeout() | hibernate} |
-  {noreply, NewState :: #state{}} |
-  {noreply, NewState :: #state{}, timeout() | hibernate} |
-  {stop, Reason :: term(), Reply :: term(), NewState :: #state{}} |
-  {stop, Reason :: term(), NewState :: #state{}}).
-handle_call(_Request, _From, State) ->
-  {reply, ok, State}.
+not_started(info, {timeout,Tref,start}, Data) ->
+  {next_state, green, Data, [{state_timeout,Data#world_parameters.yellow_light_time,change_time}]}.
+green(state_timeout,change_time,Data) ->
+  case is_someone_on_sub_road() of
+    true ->
+      simulation_event_stream:notify(lights,changes_to_yellow,Data),
+      {next_state, yellow, Data, [{state_timeout,Data#world_parameters.yellow_light_time,change_to_red_time}]};
+    false ->
+      {keep_state,Data, [{state_timeout,Data#world_parameters.main_light_time,change_time}]}
+  end;
+green({call,From}, get_main_road_lights, Data) ->
+  {keep_state,Data,[{reply,From,green}]};
+green({call,From}, get_sub_road_lights, Data) ->
+  {keep_state,Data#{waiting := [From|Data#light.waiting]},[{reply,From,red}]}.
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Handling cast messages
-%%
-%% @end
-%%--------------------------------------------------------------------
--spec(handle_cast(Request :: term(), State :: #state{}) ->
-  {noreply, NewState :: #state{}} |
-  {noreply, NewState :: #state{}, timeout() | hibernate} |
-  {stop, Reason :: term(), NewState :: #state{}}).
-handle_cast(_Request, State) ->
-  {noreply, State}.
+yellow(state_timeout,change_to_red_time,Data) ->
+  notify_all_waiting(),
+  simulation_event_stream:notify(lights,changes_to_red,Data),
+  {next_state, red, Data, [{state_timeout,Data#world_parameters.sub_light_time,change_time}]};
+yellow(state_timeout,change_to_green_time,Data) ->
+  notify_all_waiting(),
+  simulation_event_stream:notify(lights,changes_to_green,Data),
+  {next_state, green, Data, [{state_timeout,Data#world_parameters.main_light_time,change_time}]};
+yellow({call,From}, get_main_road_lights, Data) ->
+  {keep_state,Data,[{reply,From,yellow}]};
+yellow({call,From}, get_sub_road_lights, Data) ->
+  {keep_state,Data,[{reply,From,yellow}]}.
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Handling all non call/cast messages
-%%
-%% @spec handle_info(Info, State) -> {noreply, State} |
-%%                                   {noreply, State, Timeout} |
-%%                                   {stop, Reason, State}
-%% @end
-%%--------------------------------------------------------------------
--spec(handle_info(Info :: timeout() | term(), State :: #state{}) ->
-  {noreply, NewState :: #state{}} |
-  {noreply, NewState :: #state{}, timeout() | hibernate} |
-  {stop, Reason :: term(), NewState :: #state{}}).
-handle_info(_Info, State) ->
-  {noreply, State}.
+red(state_timeout,change_time,Data) ->
+  case is_someone_on_sub_road() and not is_someone_on_main_road() of
+    true ->
+      {keep_state,Data, [{state_timeout,Data#world_parameters.sub_light_time,change_time}]};
+    false ->
+      simulation_event_stream:notify(lights,changes_to_yellow,Data),
+      {next_state, yellow, Data, [{state_timeout,Data#world_parameters.yellow_light_time,change_to_green_time}]}
+  end;
+red({call,From}, get_main_road_lights, Data) ->
+  {keep_state,Data#{waiting := [From|Data#light.waiting]},[{reply,From,red}]};
+red({call,From}, get_main_road_lights, Data) ->
+  {keep_state,Data,[{reply,From,green}]}.
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% This function is called by a gen_server when it is about to
-%% terminate. It should be the opposite of Module:init/1 and do any
-%% necessary cleaning up. When it returns, the gen_server terminates
-%% with Reason. The return value is ignored.
-%%
-%% @spec terminate(Reason, State) -> void()
-%% @end
-%%--------------------------------------------------------------------
--spec(terminate(Reason :: (normal | shutdown | {shutdown, term()} | term()),
-    State :: #state{}) -> term()).
-terminate(_Reason, State) ->
-  simulation_event_stream:notify(lights,stopped,State),
-  ok.
+handle_event(_, _, Data) ->
+  %% Ignore all other events
+  {keep_state,Data}.
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Convert process state when code is changed
-%%
-%% @spec code_change(OldVsn, State, Extra) -> {ok, NewState}
-%% @end
-%%--------------------------------------------------------------------
--spec(code_change(OldVsn :: term() | {down, term()}, State :: #state{},
-    Extra :: term()) ->
-  {ok, NewState :: #state{}} | {error, Reason :: term()}).
-code_change(_OldVsn, State, _Extra) ->
-  {ok, State}.
+%TODO: implement this
+is_someone_on_sub_road() -> true.
+is_someone_on_main_road() -> true.
+notify_all_waiting() -> done.
 
-%%%===================================================================
-%%% Internal functions
-%%%===================================================================
+
+terminate(_Reason, _State, _Data) ->
+  void.
+code_change(_Vsn, State, Data, _Extra) ->
+  {ok,State,Data}.
+callback_mode() -> state_functions.

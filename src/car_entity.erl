@@ -60,7 +60,7 @@ start_link(WorldParameters) ->
   {ok, State :: #state{}} | {ok, State :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term()} | ignore).
 init(State) ->
-  State = {},
+  State = [],
   simulation_event_stream:notify(car,spawned,State),
   {ok, State}.
 

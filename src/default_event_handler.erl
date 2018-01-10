@@ -109,6 +109,18 @@ handle_event({lights,stopped,CarState}, State) ->
   io:format("Lights disappeared ~n"),
   {ok, State};
 
+handle_event({lights,changes_to_red,Data}, State) ->
+  io:format("Main lights are red. Sub lights are green ~n"),
+  {ok, State};
+
+handle_event({lights,changes_to_yellow,Data}, State) ->
+  io:format("Main lights are yellow. Sub lights are yellow ~n"),
+  {ok, State};
+
+handle_event({lights,changes_to_green,Data}, State) ->
+  io:format("Main lights are green. Sub lights are red ~n"),
+  {ok, State};
+
 handle_event(Msg,State) ->
   io:format("Not handled event happned!  <~w> ~n",[Msg]),
   {ok, State}.
