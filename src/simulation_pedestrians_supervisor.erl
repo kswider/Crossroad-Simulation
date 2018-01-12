@@ -10,6 +10,7 @@
 -author("motek").
 
 -behaviour(supervisor).
+-include("../include/records.hrl").
 
 %% API
 -export([start_link/1,generate_pedestrians/2,kill_children/0]).

@@ -11,6 +11,7 @@
 
 -behaviour(gen_server).
 
+-include("../include/records.hrl").
 %% API
 -export([start_link/1]).
 
@@ -38,8 +39,8 @@
 %%--------------------------------------------------------------------
 -spec(start_link(WorldParameters::any()) ->
   {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
-start_link(WorldParameters) ->
-  gen_server:start_link({local, ?SERVER}, ?MODULE, WorldParameters, []).
+start_link(InitialState) ->
+  gen_server:start_link({local, ?SERVER}, ?MODULE, InitialState, []).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -59,8 +60,13 @@ start_link(WorldParameters) ->
 -spec(init(Args :: term()) ->
   {ok, State :: #state{}} | {ok, State :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term()} | ignore).
-init(WorldParameters) ->
-  State = [],
+init({WorldParameters,Position,Directions}) ->
+  State = #pedestrian{
+    pid = self(),
+    position = Position,
+    directions = Directions,
+    world_parameters = WorldParameters
+  },
   simulation_event_stream:notify(pedestrian,spawned,State),
   {ok, State}.
 
@@ -79,8 +85,8 @@ init(WorldParameters) ->
   {noreply, NewState :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term(), Reply :: term(), NewState :: #state{}} |
   {stop, Reason :: term(), NewState :: #state{}}).
-handle_call(_Request, _From, State) ->
-  {reply, ok, State}.
+handle_call({are_you_at,X,Y}, From, State) ->
+  {reply, am_i_at(X,Y,State), State}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -93,7 +99,19 @@ handle_call(_Request, _From, State) ->
   {noreply, NewState :: #state{}} |
   {noreply, NewState :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term(), NewState :: #state{}}).
-handle_cast(_Request, State) ->
+handle_cast({make_next_step}, State) ->
+  case am_i_entering_zebra(State#position) of
+    true ->
+      case is_light_green(State#position) and is_free(State#position) of
+        true ->
+          {NDirections,NPosition} = next_position(State#pedestrian.directions, State#pedestrian.position),
+          State = State#pedestrian{directions = NDirections, position = NPosition}
+      end;
+    _ ->
+      {NDirections,NPosition} = next_position(State#pedestrian.directions, State#pedestrian.position),
+      State = State#pedestrian{directions = NDirections, position = NPosition}
+  end,
+  erlang:start_timer(State#world_parameters.pedestrian_speed, self(), start),
   {noreply, State}.
 
 %%--------------------------------------------------------------------
@@ -147,3 +165,74 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+am_i_at(X,Y,State) ->
+  State#pedestrian.position#position.x == X and State#pedestrian.position#position.y == Y.
+
+next_position([NxtTurn|Tail],Position) ->
+  Position = estimate_next_position(Position),
+  case am_i_at_change_position(Position) of
+    true ->
+      Position = make_turn(Position,NxtTurn),
+      Directions = Tail;
+    _ ->
+      Directions = [NxtTurn|Tail]
+  end,
+  {Directions,Position}.
+
+am_i_at_change_position(Position) ->
+   ((Position#position.x == 5 and Position#position.y == 5) or
+    (Position#position.x == 7 and Position#position.y == 5) or
+    (Position#position.x == 5 and Position#position.y == 7) or
+    (Position#position.x == 7 and Position#position.y == 7)).
+
+make_turn(Position,forward) -> Position;
+make_turn(Position,left) ->
+  Position#position{
+    look_x = Position#position.look_y,
+    look_y = -Position#position.look_x
+  };
+make_turn(Position,right) ->
+  Position#position{
+    look_x = -Position#position.look_y,
+    look_y = Position#position.look_x
+  };
+make_turn(Position,_) -> Position.
+
+estimate_next_position(Position) ->
+  Position#position{
+    x = Position#position.x + Position#position.look_x,
+    y = Position#position.y + Position#position.look_y
+  }.
+
+am_i_entering_zebra(Position) -> am_i_at_change_position(Position).
+
+is_light_green(Position) ->
+  [ {_, Light, _, _} | _ ] = supervisor:which_children(simulation_lights_supervisor),
+  case gen_statem:call(Light,which_lights(Position)) of
+    green -> true;
+    _ -> false
+  end.
+
+which_lights(Position) when Position#position.look_x == 1 and Position#position.look_y == 0 ->
+  get_sub_road_lights;
+which_lights(Position) ->
+  get_main_road_lights.
+
+is_free(Position) ->
+  Cars = supervisor:which_children(simulation_traffic_supervisor),
+  NxtPosition = next_position(Position,[forward]),
+  case ask_cars_for_position(Cars,NxtPosition#position.x,NxtPosition#position.y) of
+    free -> true;
+    _ -> false
+  end.
+
+ask_cars_for_position([], NxtPositionPositionX, NxtPositionPositionY) -> free;
+ask_cars_for_position([ {_Id, Car, _Type, _Modules} | Rest ], NxtPositionPositionX, NxtPositionPositionY) ->
+  try gen_server:call(Car, {are_you_at, NxtPositionPositionX, NxtPositionPositionY}) of
+    true ->
+      not_free;
+    false ->
+      ask_cars_for_position(Rest,NxtPositionPositionX,NxtPositionPositionY)
+  catch
+    exit:_Reason -> not_free
+  end.

@@ -8,5 +8,7 @@
 %%%-------------------------------------------------------------------
 -author("motek").
 
--record(world_parameters,{main_light_time,sub_light_time,yellow_light_time,cars_start_amount,pedestrian_start_amount}).
+-record(position,{x,y,look_x,look_y}).
+-record(world_parameters,{main_light_time,sub_light_time,yellow_light_time,cars_start_amount,pedestrian_start_amount,pedestrian_speed}).
 -record(light,{pid,main_road,waiting = [],world_parameters}).
+-record(pedestrian,{pid,directions = [], position = #position ,world_parameters}).
