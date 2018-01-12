@@ -11,6 +11,7 @@
 
 -behaviour(gen_event).
 
+-include("../include/records.hrl").
 %% API
 -export([start_link/0,
   add_handler/0]).
@@ -85,24 +86,29 @@ init([]) ->
   {swap_handler, Args1 :: term(), NewState :: #state{},
     Handler2 :: (atom() | {atom(), Id :: term()}), Args2 :: term()} |
   remove_handler).
+
+handle_event({pedestrian,Pid,spawned,PedestrianState}, State) ->
+  io:format("Pedestrian ~w spawned at <~w,~w> ~n",[Pid,PedestrianState#pedestrian.position#position.x,PedestrianState#pedestrian.position#position.y]),
+  {ok, State};
+handle_event({pedestrian,Pid,disappeared,PedestrianState}, State) ->
+  io:format("Pedestrian ~w disappeared ~n",[Pid]),
+  {ok, State};
+handle_event({pedestrian,Pid,move,PedestrianState}, State) ->
+  io:format("Pedestrian ~w moves to <~w,~w> ~n",[Pid,PedestrianState#pedestrian.position#position.x,PedestrianState#pedestrian.position#position.y]),
+  {ok, State};
+handle_event({pedestrian,Pid,waits,PedestrianState}, State) ->
+  io:format("Pedestrian ~w waits at <~w,~w> ~n",[Pid,PedestrianState#pedestrian.position#position.x,PedestrianState#pedestrian.position#position.y]),
+  {ok, State};
+
 handle_event({car,spawned,CarState}, State) ->
   io:format("Car spawned ~n"),
   {ok, State};
-
-handle_event({pedestrian,spawned,CarState}, State) ->
-  io:format("Pedestrian spawned ~n"),
-  {ok, State};
-
-handle_event({lights,started,CarState}, State) ->
-  io:format("Lights started ~n"),
-  {ok, State};
-
 handle_event({car,disappeared,CarState}, State) ->
   io:format("Car disappeard ~n"),
   {ok, State};
 
-handle_event({pedestrian,disappeared,CarState}, State) ->
-  io:format("Pedestrian disappeared ~n"),
+handle_event({lights,started,CarState}, State) ->
+  io:format("Lights started ~n"),
   {ok, State};
 
 handle_event({lights,stopped,CarState}, State) ->

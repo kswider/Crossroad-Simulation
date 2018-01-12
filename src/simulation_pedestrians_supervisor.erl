@@ -23,14 +23,17 @@
 %%%===================================================================
 %%% API functions
 %%%===================================================================
-generate_pedestrians(WorldParameters,0) -> done;
+generate_pedestrians(WorldParameters,0) ->
+  done;
 generate_pedestrians(WorldParameters,Amount) ->
-  Pedestrian = { {pedestrian, Amount},
-    {pedestrian_entity, start_link, [ WorldParameters ]},
+  UUID = gen_server:call(uuid_provider,next_pedestrian),
+  Pedestrian = { {carrot, UUID},
+    {pedestrian_entity, start_link, [{WorldParameters, common_defs:random_pedestrian_start_position(),common_defs:random_directions(3)}]},
     temporary, brutal_kill, worker,
     [ pedestrian_entity ]},
   supervisor:start_child(?MODULE, Pedestrian),
   generate_pedestrians(WorldParameters,Amount-1).
+
 kill_children() -> common_defs:stop_children(?MODULE).
 %%--------------------------------------------------------------------
 %% @doc
@@ -67,8 +70,8 @@ init(WorldParameters) ->
   simulation_event_stream:component_ready(?MODULE),
 
   RestartStrategy = one_for_one,
-  MaxRestarts = 1000,
-  MaxSecondsBetweenRestarts = 3600,
+  MaxRestarts = 200,
+  MaxSecondsBetweenRestarts = 1,
 
   SupFlags = {RestartStrategy, MaxRestarts, MaxSecondsBetweenRestarts},
 

@@ -40,7 +40,7 @@
 -spec(start_link(WorldParameters::any()) ->
   {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
 start_link(InitialState) ->
-  gen_server:start_link({local, ?SERVER}, ?MODULE, InitialState, []).
+  gen_server:start_link(?MODULE, InitialState, []).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -67,7 +67,8 @@ init({WorldParameters,Position,Directions}) ->
     directions = Directions,
     world_parameters = WorldParameters
   },
-  simulation_event_stream:notify(pedestrian,spawned,State),
+  simulation_event_stream:notify(pedestrian,self(),spawned,State),
+  erlang:start_timer(State#pedestrian.world_parameters#world_parameters.pedestrian_speed, self(), make_next_step),
   {ok, State}.
 
 %%--------------------------------------------------------------------
@@ -99,19 +100,7 @@ handle_call({are_you_at,X,Y}, From, State) ->
   {noreply, NewState :: #state{}} |
   {noreply, NewState :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term(), NewState :: #state{}}).
-handle_cast({make_next_step}, State) ->
-  case am_i_entering_zebra(State#position) of
-    true ->
-      case is_light_green(State#position) and is_free(State#position) of
-        true ->
-          {NDirections,NPosition} = next_position(State#pedestrian.directions, State#pedestrian.position),
-          State = State#pedestrian{directions = NDirections, position = NPosition}
-      end;
-    _ ->
-      {NDirections,NPosition} = next_position(State#pedestrian.directions, State#pedestrian.position),
-      State = State#pedestrian{directions = NDirections, position = NPosition}
-  end,
-  erlang:start_timer(State#world_parameters.pedestrian_speed, self(), start),
+handle_cast(_Request, State) ->
   {noreply, State}.
 
 %%--------------------------------------------------------------------
@@ -128,8 +117,28 @@ handle_cast({make_next_step}, State) ->
   {noreply, NewState :: #state{}} |
   {noreply, NewState :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term(), NewState :: #state{}}).
-handle_info(_Info, State) ->
-  {noreply, State}.
+handle_info({timeout, _Ref, make_next_step}, State) ->
+  case am_i_entering_zebra(State#pedestrian.position) of
+    true ->
+      case is_light_green(State#pedestrian.position) and is_free(State#pedestrian.position) of
+        true ->
+          {NDirections,NPosition} = next_position(State#pedestrian.directions, State#pedestrian.position),
+          NState = State#pedestrian{directions = NDirections, position = NPosition},
+          simulation_event_stream:notify(pedestrian,State#pedestrian.pid,move,State),
+          erlang:start_timer(State#pedestrian.world_parameters#world_parameters.pedestrian_speed, self(), make_next_step),
+          {noreply, NState};
+        _ ->
+         simulation_event_stream:notify(pedestrian,self(),waits,State),
+         erlang:start_timer(State#pedestrian.world_parameters#world_parameters.pedestrian_speed, self(), make_next_step),
+         {noreply, State}
+      end;
+    _ ->
+      {NDirections,NPosition} = next_position(State#pedestrian.directions, State#pedestrian.position),
+      NState = State#pedestrian{directions = NDirections, position = NPosition},
+      simulation_event_stream:notify(pedestrian,State#pedestrian.pid,move,State),
+      erlang:start_timer(State#pedestrian.world_parameters#world_parameters.pedestrian_speed, self(), make_next_step),
+      {noreply, NState}
+  end.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -166,24 +175,23 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 am_i_at(X,Y,State) ->
-  State#pedestrian.position#position.x == X and State#pedestrian.position#position.y == Y.
+  (State#pedestrian.position#position.x == X) and (State#pedestrian.position#position.y == Y).
 
 next_position([NxtTurn|Tail],Position) ->
-  Position = estimate_next_position(Position),
+    NPosition = estimate_next_position(Position),
   case am_i_at_change_position(Position) of
     true ->
-      Position = make_turn(Position,NxtTurn),
-      Directions = Tail;
+      NNPosition = make_turn(NPosition,NxtTurn),
+      {Tail,NNPosition};
     _ ->
-      Directions = [NxtTurn|Tail]
-  end,
-  {Directions,Position}.
+      {[NxtTurn|Tail],NPosition}
+  end.
 
 am_i_at_change_position(Position) ->
-   ((Position#position.x == 5 and Position#position.y == 5) or
-    (Position#position.x == 7 and Position#position.y == 5) or
-    (Position#position.x == 5 and Position#position.y == 7) or
-    (Position#position.x == 7 and Position#position.y == 7)).
+     ((Position#position.x == 5) and (Position#position.y == 5)) or
+     ((Position#position.x == 7) and (Position#position.y == 5)) or
+     ((Position#position.x == 5) and (Position#position.y == 7)) or
+     ((Position#position.x == 7) and (Position#position.y == 7)).
 
 make_turn(Position,forward) -> Position;
 make_turn(Position,left) ->
@@ -213,18 +221,18 @@ is_light_green(Position) ->
     _ -> false
   end.
 
-which_lights(Position) when Position#position.look_x == 1 and Position#position.look_y == 0 ->
+which_lights(Position) when (Position#position.look_x == 1) and (Position#position.look_y == 0) ->
   get_sub_road_lights;
 which_lights(Position) ->
   get_main_road_lights.
 
-is_free(Position) ->
-  Cars = supervisor:which_children(simulation_traffic_supervisor),
-  NxtPosition = next_position(Position,[forward]),
-  case ask_cars_for_position(Cars,NxtPosition#position.x,NxtPosition#position.y) of
-    free -> true;
-    _ -> false
-  end.
+is_free(Position) -> true.
+  %Cars = supervisor:which_children(simulation_traffic_supervisor),
+  %NxtPosition = next_position(Position,[forward]),
+  %case ask_cars_for_position(Cars,NxtPosition#position.x,NxtPosition#position.y) of
+  %  free -> true;
+  %  _ -> false
+  %end.
 
 ask_cars_for_position([], NxtPositionPositionX, NxtPositionPositionY) -> free;
 ask_cars_for_position([ {_Id, Car, _Type, _Modules} | Rest ], NxtPositionPositionX, NxtPositionPositionY) ->

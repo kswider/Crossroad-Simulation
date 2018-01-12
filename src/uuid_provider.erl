@@ -4,15 +4,15 @@
 %%% @doc
 %%%
 %%% @end
-%%% Created : 08. Jan 2018 15:01
+%%% Created : 12. Jan 2018 23:23
 %%%-------------------------------------------------------------------
--module(simulation_controller).
+-module(uuid_provider).
 -author("motek").
 
 -behaviour(gen_server).
 
 %% API
--export([start_link/1, start_simulation/0,stop_simulation/0,generate_cars/1,generate_pedestrians/1]).
+-export([start_link/0]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -30,32 +30,20 @@
 %%% API
 %%%===================================================================
 
-start_simulation() ->
-  gen_server:call(?MODULE, start_simulation).
-
-stop_simulation() ->
-  gen_server:call(?MODULE, stop_simulation).
-
-generate_cars(Amount) ->
-  gen_server:call(?MODULE, {generate_cars,Amount}).
-
-generate_pedestrians(Amount) ->
-  gen_server:call(?MODULE, {generate_pedestrians,Amount}).
-
 %%--------------------------------------------------------------------
 %% @doc
 %% Starts the server
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec(start_link(WorldParameters::any()) ->
+-spec(start_link() ->
   {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
-start_link(WorldParameters) ->
-  gen_server:start_link({local, ?MODULE}, ?MODULE, WorldParameters, []).
+start_link() ->
+  gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
 %%%===================================================================
 %%% gen_server callbacks
-%%%=================================================================
+%%%===================================================================
 
 %%--------------------------------------------------------------------
 %% @private
@@ -71,8 +59,8 @@ start_link(WorldParameters) ->
 -spec(init(Args :: term()) ->
   {ok, State :: #state{}} | {ok, State :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term()} | ignore).
-init(WorldParameters) ->
-  {ok, {stopped,WorldParameters}}.
+init([]) ->
+  {ok, {0,0}}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -89,34 +77,10 @@ init(WorldParameters) ->
   {noreply, NewState :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term(), Reply :: term(), NewState :: #state{}} |
   {stop, Reason :: term(), NewState :: #state{}}).
-
-handle_call(start_simulation, _From, {stopped,WorldParameters}) ->
-  simulation_main_supervisor:start_simulation(WorldParameters),
-  {reply, started, {started,WorldParameters}};
-
-handle_call(start_simulation, _From, {started,WorldParameters}) ->
-  {reply, already_started, {started,WorldParameters}};
-
-handle_call(stop_simulation, _From, {started,WorldParameters}) ->
-  simulation_main_supervisor:stop_simulation(),
-  {reply, stopped, {stopped,WorldParameters}};
-
-handle_call(stop_simulation, _From, {stopped,WorldParameters}) ->
-  {reply, already_stopped, {stopped,WorldParameters}};
-
-handle_call({generate_pedestrians, Amount}, _From, {started,WorldParameters}) ->
-  simulation_main_supervisor:generate_pedestrians(WorldParameters,Amount),
-  {reply, pedestrians_generated, {started,WorldParameters}};
-
-handle_call({generate_pedestrians, Amount}, _From, {stopped,WorldParameters}) ->
-  {reply, pedestrians_not_generated, {stopped,WorldParameters}};
-
-handle_call({generate_cars, Amount}, _From, {started,WorldParameters}) ->
-  simulation_main_supervisor:generate_cars(Amount),
-  {reply, cars_generated, {started,WorldParameters}};
-
-handle_call({generate_cars, Amount}, _From, {stopped,WorldParameters}) ->
-  {reply, cars_not_generated, {stopped,WorldParameters}}.
+handle_call(next_pedestrian, From, {P,C}) ->
+  {reply, P+1, {P+1,C}};
+handle_call(next_car, From, {P,C}) ->
+  {reply, C+1, {P,C+1}}.
 
 %%--------------------------------------------------------------------
 %% @private

@@ -12,7 +12,7 @@
 -behaviour(supervisor).
 
 %% API
--export([start_link/1,start_simulation/1,stop_simulation/0,generate_cars/1,generate_pedestrians/1]).
+-export([start_link/1,start_simulation/1,stop_simulation/0,generate_cars/1,generate_pedestrians/2]).
 -include("../include/records.hrl").
 %% Supervisor callbacks
 -export([init/1]).
@@ -32,7 +32,8 @@ stop_simulation() ->
   simulation_pedestrians_supervisor:kill_children(),
   simulation_traffic_supervisor:kill_children(),
   done.
-generate_pedestrians(Amount) -> 3.
+generate_pedestrians(WorldParameters,Amount) ->
+  simulation_pedestrians_supervisor:generate_pedestrians(WorldParameters,Amount).
 generate_cars(Amount) -> 3.
 %%--------------------------------------------------------------------
 %% @doc
@@ -85,20 +86,26 @@ init(WorldParameters) ->
   %  Restart, Shutdown, Type,
   %  [ simulation_traffic_supervisor ]
   %},
-  %PedestriansSupervisor = {
-  %  pedestrians_supervisor,
-  %  {simulation_pedestrians_supervisor, start_link, Args},
-  %  Restart, Shutdown, Type,
-  %  [ simulation_pedestrians_supervisor ]
-  %},
+  PedestriansSupervisor = {
+    simulation_pedestrians_supervisor,
+    {simulation_pedestrians_supervisor, start_link, Args},
+    Restart, Shutdown, Type,
+    [ simulation_pedestrians_supervisor ]
+  },
   LightsSupervisor = {
-    lights_supervisor,
+    simulation_lights_supervisor,
     {simulation_lights_supervisor, start_link, Args},
     Restart, Shutdown, Type,
     [ simulation_lights_supervisor ]
   },
+  UUIDProvider = {
+    uuid_provider,
+    {uuid_provider, start_link, []},
+    Restart, Shutdown, worker,
+    [ uuid_provider ]
+  },
 
-  {ok, {SupFlags, [LightsSupervisor]}}.%[TrafficSupervisor,PedestriansSupervisor,LightsSupervisor]}}.
+  {ok, {SupFlags, [LightsSupervisor, UUIDProvider, PedestriansSupervisor]}}.%[TrafficSupervisor,PedestriansSupervisor,LightsSupervisor]}}.
 
 %%%===================================================================
 %%% Internal functions

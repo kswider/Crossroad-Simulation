@@ -38,14 +38,14 @@ init(WorldParameters) ->
   {ok,not_started,Data}.
 
 not_started(info, {timeout,Tref,start}, Data) ->
-  {next_state, green, Data, [{state_timeout,Data#world_parameters.yellow_light_time,change_time}]}.
+  {next_state, green, Data, [{state_timeout,Data#light.world_parameters#world_parameters.yellow_light_time,change_time}]}.
 green(state_timeout,change_time,Data) ->
   case is_someone_on_sub_road() of
     true ->
       simulation_event_stream:notify(lights,changes_to_yellow,Data),
-      {next_state, yellow, Data, [{state_timeout,Data#world_parameters.yellow_light_time,change_to_red_time}]};
+      {next_state, yellow, Data, [{state_timeout,Data#light.world_parameters#world_parameters.yellow_light_time,change_to_red_time}]};
     false ->
-      {keep_state,Data, [{state_timeout,Data#world_parameters.main_light_time,change_time}]}
+      {keep_state,Data, [{state_timeout,Data#light.world_parameters#world_parameters.main_light_time,change_time}]}
   end;
 green({call,From}, get_main_road_lights, Data) ->
   {keep_state,Data,[{reply,From,green}]};
@@ -55,11 +55,11 @@ green({call,From}, get_sub_road_lights, Data) ->
 yellow(state_timeout,change_to_red_time,Data) ->
   notify_all_waiting(),
   simulation_event_stream:notify(lights,changes_to_red,Data),
-  {next_state, red, Data, [{state_timeout,Data#world_parameters.sub_light_time,change_time}]};
+  {next_state, red, Data, [{state_timeout,Data#light.world_parameters#world_parameters.sub_light_time,change_time}]};
 yellow(state_timeout,change_to_green_time,Data) ->
   notify_all_waiting(),
   simulation_event_stream:notify(lights,changes_to_green,Data),
-  {next_state, green, Data, [{state_timeout,Data#world_parameters.main_light_time,change_time}]};
+  {next_state, green, Data, [{state_timeout,Data#light.world_parameters#world_parameters.main_light_time,change_time}]};
 yellow({call,From}, get_main_road_lights, Data) ->
   {keep_state,Data,[{reply,From,yellow}]};
 yellow({call,From}, get_sub_road_lights, Data) ->
@@ -68,14 +68,14 @@ yellow({call,From}, get_sub_road_lights, Data) ->
 red(state_timeout,change_time,Data) ->
   case is_someone_on_sub_road() and not is_someone_on_main_road() of
     true ->
-      {keep_state,Data, [{state_timeout,Data#world_parameters.sub_light_time,change_time}]};
+      {keep_state,Data, [{state_timeout,Data#light.world_parameters#world_parameters.sub_light_time,change_time}]};
     false ->
       simulation_event_stream:notify(lights,changes_to_yellow,Data),
-      {next_state, yellow, Data, [{state_timeout,Data#world_parameters.yellow_light_time,change_to_green_time}]}
+      {next_state, yellow, Data, [{state_timeout,Data#light.world_parameters#world_parameters.yellow_light_time,change_to_green_time}]}
   end;
 red({call,From}, get_main_road_lights, Data) ->
-  {keep_state,Data#{waiting := [From|Data#light.waiting]},[{reply,From,red}]};
-red({call,From}, get_main_road_lights, Data) ->
+  {keep_state,Data#light{waiting = [From|Data#light.waiting]},[{reply,From,red}]};
+red({call,From}, get_sub_road_lights, Data) ->
   {keep_state,Data,[{reply,From,green}]}.
 
 handle_event(_, _, Data) ->
