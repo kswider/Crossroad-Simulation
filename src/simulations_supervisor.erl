@@ -23,12 +23,12 @@
 %%% API functions
 %%%===================================================================
 start_simulation(WorldParameters) ->
-  simulation_lights_supervisor:start_lights(WorldParameters),
-  %simulation_pedestrians_supervisor:generate_pedestrians(WorldParameters,3),
+  start_lights(WorldParameters),
+  simulation_pedestrians_supervisor:generate_pedestrians(WorldParameters,3),
   %simulation_traffic_supervisor:generate_cars(WorldParameters,4),
   done.
 stop_simulation() ->
-  simulation_lights_supervisor:stop_lights(),
+  stop_lights(),
   simulation_pedestrians_supervisor:kill_children(),
   simulation_traffic_supervisor:kill_children(),
   done.
@@ -92,12 +92,6 @@ init(WorldParameters) ->
     Restart, Shutdown, Type,
     [ simulation_pedestrians_supervisor ]
   },
-  LightsSupervisor = {
-    simulation_lights_supervisor,
-    {simulation_lights_supervisor, start_link, Args},
-    Restart, Shutdown, Type,
-    [ simulation_lights_supervisor ]
-  },
   UUIDProvider = {
     uuid_provider,
     {uuid_provider, start_link, []},
@@ -105,8 +99,17 @@ init(WorldParameters) ->
     [ uuid_provider ]
   },
 
-  {ok, {SupFlags, [LightsSupervisor, UUIDProvider, PedestriansSupervisor]}}.%[TrafficSupervisor,PedestriansSupervisor,LightsSupervisor]}}.
+  {ok, {SupFlags, [UUIDProvider, PedestriansSupervisor]}}.%[TrafficSupervisor,PedestriansSupervisor,LightsSupervisor]}}.
 
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
+start_lights(WorldParameters) ->
+  Light = { light_entity,
+    {light_entity, start_link, [ WorldParameters ]},
+    temporary, brutal_kill, worker,
+    [ light_entity ]},
+  supervisor:start_child(?MODULE, Light).
+
+stop_lights() -> common_defs:stop_children(?MODULE).

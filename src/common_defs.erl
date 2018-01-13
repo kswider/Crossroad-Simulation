@@ -11,7 +11,7 @@
 
 -include("../include/records.hrl").
 %% API
--export([stop_children/1,random_directions/1,random_direction/0,random_pedestrian_start_position/0]).
+-export([stop_children/1,random_directions/1,random_direction/0,random_pedestrian_start_position/1,get_pedestrian_turn_points/1,get_pedestrian_enter_crossing_points/1,get_pedestrians_start_points/1,should_dissapear/2]).
 
 stop_children(SupervisorName) ->
   [ Pid ! stop_entity || {_, Pid, _, _} <- supervisor:which_children(SupervisorName) ].
@@ -33,14 +33,58 @@ random_directions(0,List) ->
 random_directions(N,List) ->
   random_directions(N-1,[random_direction()|List]).
 
-random_pedestrian_start_position() ->
+random_pedestrian_start_position(WorldParameters) ->
   random:seed(erlang:phash2([node()]),
     erlang:monotonic_time(),
     erlang:unique_integer()),
-  {X,Y,LookX,LookY} = lists:nth(random:uniform(8),?PEDESTRIAN_START_POSITIONS),
+  {X,Y,LookX,LookY} = lists:nth(random:uniform(8),get_pedestrians_start_points(WorldParameters)),
   #position{
     x = X,
     y = Y,
     look_x = LookX,
     look_y = LookY
   }.
+
+get_pedestrians_start_points(WorldParameters) ->
+  Y = WorldParameters#world_parameters.world_height - 1,
+  X = WorldParameters#world_parameters.world_width - 1,
+  {X1,X2} = case X rem 2 of
+              0 -> {X div 2-3,X div 2+3};
+              1 -> {X div 2-3,X div 2+4}
+            end,
+  {Y1,Y2} = case Y rem 2 of
+              0 -> {Y div 2-3,Y div 2+3};
+              1 -> {Y div 2-3,Y div 2+4}
+            end,
+  [{X1,0,0,1},{X1,Y,0,-1},{X2,0,0,1},{X2,Y,0,-1},{0,Y1,1,0},{X,Y1,-1,0},{0,Y2,1,0},{X,Y2,-1,0}].
+
+get_pedestrian_turn_points(WorldParameters) ->
+  Y = WorldParameters#world_parameters.world_height - 1,
+  X = WorldParameters#world_parameters.world_width - 1,
+  {X1,X2} = case X rem 2 of
+              0 -> {X div 2-3,X div 2+3};
+              1 -> {X div 2-3,X div 2+4}
+            end,
+  {Y1,Y2} = case Y rem 2 of
+              0 -> {Y div 2-3,Y div 2+3};
+              1 -> {Y div 2-3,Y div 2+4}
+            end,
+  [{X1,Y1},{X1,Y2},{X2,Y1},{X2,Y2}].
+
+%TODO: we need to add break point on the middle of the crossing
+get_pedestrian_enter_crossing_points(WorldParameters) ->
+  Y = WorldParameters#world_parameters.world_height - 1,
+  X = WorldParameters#world_parameters.world_width - 1,
+  {X1,X2} = case X  rem  2 of
+              0 -> {X rem 2-3,X rem 2+3};
+              1 -> {X rem 2-3,X rem 2+4}
+            end,
+  {Y1,Y2} = case Y  rem  2 of
+              0 -> {Y rem 2-3,Y rem 2+3};
+              1 -> {Y rem 2-3,Y rem 2+4}
+            end,
+  [{X1+1,Y1,1,0},{X1+1,Y2,1,0},{X2-1,Y1,-1,0},{X2-1,Y2,-1,0},{X1,Y1+1,0,1},{X1,Y2-1,0,-1},{X2,Y1+1,0,1},{X2,Y2-1,0,-1}].
+
+should_dissapear(WorldParameters,Position) ->
+  (Position#position.x < 0) or (Position#position.x > WorldParameters#world_parameters.world_width-1) or
+    (Position#position.y < 0) or (Position#position.y > WorldParameters#world_parameters.world_height-1).

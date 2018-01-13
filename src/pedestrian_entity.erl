@@ -118,26 +118,28 @@ handle_cast(_Request, State) ->
   {noreply, NewState :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term(), NewState :: #state{}}).
 handle_info({timeout, _Ref, make_next_step}, State) ->
-  case am_i_entering_zebra(State#pedestrian.position) of
-    true ->
-      case is_light_green(State#pedestrian.position) and is_free(State#pedestrian.position) of
+  case common_defs:should_dissapear(State#pedestrian.world_parameters,State#pedestrian.position) of
+    true -> supervisor:terminate_child(simulation_pedestrians_supervisor,State#pedestrian.pid);
+    _ ->
+      case am_i_entering_zebra(State) of
         true ->
-          {NDirections,NPosition} = next_position(State#pedestrian.directions, State#pedestrian.position),
-          NState = State#pedestrian{directions = NDirections, position = NPosition},
+          case is_light_green(State) and is_free(State) of
+            true ->
+              NState = next_position(State),
+              simulation_event_stream:notify(pedestrian,State#pedestrian.pid,move,State),
+              erlang:start_timer(State#pedestrian.world_parameters#world_parameters.pedestrian_speed, self(), make_next_step),
+              {noreply, NState};
+            _ ->
+             simulation_event_stream:notify(pedestrian,self(),waits,State),
+             erlang:start_timer(State#pedestrian.world_parameters#world_parameters.pedestrian_speed, self(), make_next_step),
+             {noreply, State}
+          end;
+        _ ->
+          NState = next_position(State),
           simulation_event_stream:notify(pedestrian,State#pedestrian.pid,move,State),
           erlang:start_timer(State#pedestrian.world_parameters#world_parameters.pedestrian_speed, self(), make_next_step),
-          {noreply, NState};
-        _ ->
-         simulation_event_stream:notify(pedestrian,self(),waits,State),
-         erlang:start_timer(State#pedestrian.world_parameters#world_parameters.pedestrian_speed, self(), make_next_step),
-         {noreply, State}
-      end;
-    _ ->
-      {NDirections,NPosition} = next_position(State#pedestrian.directions, State#pedestrian.position),
-      NState = State#pedestrian{directions = NDirections, position = NPosition},
-      simulation_event_stream:notify(pedestrian,State#pedestrian.pid,move,State),
-      erlang:start_timer(State#pedestrian.world_parameters#world_parameters.pedestrian_speed, self(), make_next_step),
-      {noreply, NState}
+          {noreply, NState}
+      end
   end.
 
 %%--------------------------------------------------------------------
@@ -154,7 +156,7 @@ handle_info({timeout, _Ref, make_next_step}, State) ->
 -spec(terminate(Reason :: (normal | shutdown | {shutdown, term()} | term()),
     State :: #state{}) -> term()).
 terminate(_Reason, State) ->
-  simulation_event_stream:notify(pedestrian,disappeared,State),
+  simulation_event_stream:notify(pedestrian,State#pedestrian.pid,disappeared,State),
   ok.
 
 %%--------------------------------------------------------------------
@@ -177,56 +179,76 @@ code_change(_OldVsn, State, _Extra) ->
 am_i_at(X,Y,State) ->
   (State#pedestrian.position#position.x == X) and (State#pedestrian.position#position.y == Y).
 
-next_position([NxtTurn|Tail],Position) ->
-    NPosition = estimate_next_position(Position),
-  case am_i_at_change_position(Position) of
+next_position(State) ->
+    [NxtTurn|Tail] = State#pedestrian.directions,
+    Position = State#pedestrian.position,
+    NState = estimate_next_position(State),
+  case am_i_at_change_position(State) of
     true ->
-      NNPosition = make_turn(NPosition,NxtTurn),
-      {Tail,NNPosition};
+      NNState = make_turn(NState),
+      NNState;
     _ ->
-      {[NxtTurn|Tail],NPosition}
+      NState
   end.
 
-am_i_at_change_position(Position) ->
-     ((Position#position.x == 5) and (Position#position.y == 5)) or
-     ((Position#position.x == 7) and (Position#position.y == 5)) or
-     ((Position#position.x == 5) and (Position#position.y == 7)) or
-     ((Position#position.x == 7) and (Position#position.y == 7)).
+am_i_at_change_position(State) ->
+  {X,Y} = {State#pedestrian.position#position.x,State#pedestrian.position#position.y},
+  am_i_at_change_position({X,Y},common_defs:get_pedestrian_turn_points(State#pedestrian.world_parameters)).
+am_i_at_change_position(Pos,[]) -> false;
+am_i_at_change_position(Pos,[Pos|T]) -> true;
+am_i_at_change_position(Pos,[_|T]) -> am_i_entering_zebra(Pos,T).
 
-make_turn(Position,forward) -> Position;
-make_turn(Position,left) ->
-  Position#position{
-    look_x = Position#position.look_y,
-    look_y = -Position#position.look_x
-  };
-make_turn(Position,right) ->
-  Position#position{
-    look_x = -Position#position.look_y,
-    look_y = Position#position.look_x
-  };
-make_turn(Position,_) -> Position.
+make_turn(State) ->
+  [H|T] = State#pedestrian.directions,
+  case H of
+    forward -> State;
+    left ->
+      Position = State#pedestrian.position,
+      State#pedestrian{position =
+        Position#position{
+          look_x = Position#position.look_y,
+          look_y = -Position#position.look_x
+        }
+      };
+    right ->
+      Position = State#pedestrian.position,
+      State#pedestrian{position =
+        Position#position{
+          look_x = -Position#position.look_y,
+          look_y = Position#position.look_x
+        }
+      };
+    _ -> State
+  end.
 
-estimate_next_position(Position) ->
-  Position#position{
+estimate_next_position(State) ->
+  Position = State#pedestrian.position,
+  State#pedestrian{position = Position#position{
     x = Position#position.x + Position#position.look_x,
     y = Position#position.y + Position#position.look_y
-  }.
+  }}.
 
-am_i_entering_zebra(Position) -> am_i_at_change_position(Position).
+am_i_entering_zebra(State) -> am_i_at_change_position({State#pedestrian.position#position.x,State#pedestrian.position#position.y},common_defs:get_pedestrian_enter_crossing_points(State#pedestrian.world_parameters)).
+am_i_entering_zebra(Pos,[]) -> false;
+am_i_entering_zebra(Pos,[Pos|T]) -> true;
+am_i_entering_zebra(Pos,[_|T]) -> am_i_entering_zebra(Pos,T).
 
-is_light_green(Position) ->
-  [ {_, Light, _, _} | _ ] = supervisor:which_children(simulation_lights_supervisor),
-  case gen_statem:call(Light,which_lights(Position)) of
+is_light_green(State) ->
+  Position = State#pedestrian.position,
+  case gen_statem:call(light_entity,which_lights(Position)) of
     green -> true;
     _ -> false
   end.
 
-which_lights(Position) when (Position#position.look_x == 1) and (Position#position.look_y == 0) ->
-  get_sub_road_lights;
-which_lights(Position) ->
-  get_main_road_lights.
+which_lights(State) ->
+  Position = State#pedestrian.position,
+  case ((Position#position.look_x == 1) and (Position#position.look_y == 0)) of
+    true -> get_sub_road_lights;
+    _ -> get_main_road_lights
+  end.
 
-is_free(Position) -> true.
+is_free(State) -> true.
+  %Position = State#pedestrian.position
   %Cars = supervisor:which_children(simulation_traffic_supervisor),
   %NxtPosition = next_position(Position,[forward]),
   %case ask_cars_for_position(Cars,NxtPosition#position.x,NxtPosition#position.y) of
@@ -244,3 +266,6 @@ ask_cars_for_position([ {_Id, Car, _Type, _Modules} | Rest ], NxtPositionPositio
   catch
     exit:_Reason -> not_free
   end.
+
+dissapear() ->
+  erlang:error(not_implemented).
