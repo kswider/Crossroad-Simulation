@@ -12,7 +12,7 @@
 -behaviour(supervisor).
 
 %% API
--export([start_link/1,start_simulation/1,stop_simulation/0,generate_cars/1,generate_pedestrians/2]).
+-export([start_link/1,start_simulation/1,stop_simulation/0,generate_cars/2,generate_pedestrians/2]).
 -include("../include/records.hrl").
 %% Supervisor callbacks
 -export([init/1]).
@@ -25,7 +25,7 @@
 start_simulation(WorldParameters) ->
   start_lights(WorldParameters),
   simulation_pedestrians_supervisor:generate_pedestrians(WorldParameters,3),
-  %simulation_traffic_supervisor:generate_cars(WorldParameters,4),
+  simulation_traffic_supervisor:generate_cars(WorldParameters,4),
   done.
 stop_simulation() ->
   stop_lights(),
@@ -34,39 +34,15 @@ stop_simulation() ->
   done.
 generate_pedestrians(WorldParameters,Amount) ->
   simulation_pedestrians_supervisor:generate_pedestrians(WorldParameters,Amount).
-generate_cars(Amount) -> 3.
-%%--------------------------------------------------------------------
-%% @doc
-%% Starts the supervisor
-%%
-%% @end
-%%--------------------------------------------------------------------
--spec(start_link(WorldParameters::any()) ->
-  {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
+generate_cars(WorldParameters,Amount) ->
+  simulation_traffic_supervisor:generate_cars(WorldParameters,Amount).
+
 start_link(WorldParameters) ->
   supervisor:start_link({local, ?SERVER}, ?MODULE, [WorldParameters]).
 
 %%%===================================================================
 %%% Supervisor callbacks
 %%%===================================================================
-
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Whenever a supervisor is started using supervisor:start_link/[2,3],
-%% this function is called by the new process to find out about
-%% restart strategy, maximum restart frequency and child
-%% specifications.
-%%
-%% @end
-%%--------------------------------------------------------------------
--spec(init(Args :: term()) ->
-  {ok, {SupFlags :: {RestartStrategy :: supervisor:strategy(),
-    MaxR :: non_neg_integer(), MaxT :: non_neg_integer()},
-    [ChildSpec :: supervisor:child_spec()]
-  }} |
-  ignore |
-  {error, Reason :: term()}).
 init(WorldParameters) ->
   Args = [WorldParameters],
 
@@ -80,36 +56,36 @@ init(WorldParameters) ->
   Shutdown = brutal_kill,
   Type = supervisor,
 
-  %TrafficSupervisor = {
-  %  traffic_supervisor,
-  %  {simulation_traffic_supervisor, start_link, Args},
-  %  Restart, Shutdown, Type,
-  %  [ simulation_traffic_supervisor ]
-  %},
-  PedestriansSupervisor = {
-    simulation_pedestrians_supervisor,
-    {simulation_pedestrians_supervisor, start_link, Args},
-    Restart, Shutdown, Type,
-    [ simulation_pedestrians_supervisor ]
-  },
   UUIDProvider = {
     uuid_provider,
     {uuid_provider, start_link, []},
     Restart, Shutdown, worker,
     [ uuid_provider ]
   },
+  TrafficSupervisor = {
+    traffic_supervisor,
+    {simulation_traffic_supervisor, start_link, Args},
+    Restart, Shutdown, Type,
+    [ simulation_traffic_supervisor ]
+  },
+  PedestriansSupervisor = {
+    simulation_pedestrians_supervisor,
+    {simulation_pedestrians_supervisor, start_link, Args},
+    Restart, Shutdown, Type,
+    [ simulation_pedestrians_supervisor ]
+  },
+  Light = { light_entity,
+    {light_entity, start_link, Args},
+    temporary, brutal_kill, worker,
+    [ light_entity ]},
 
-  {ok, {SupFlags, [UUIDProvider, PedestriansSupervisor]}}.%[TrafficSupervisor,PedestriansSupervisor,LightsSupervisor]}}.
+  {ok, {SupFlags, [UUIDProvider, PedestriansSupervisor, TrafficSupervisor, Light]}}.
 
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
 
 start_lights(WorldParameters) ->
-  Light = { light_entity,
-    {light_entity, start_link, [ WorldParameters ]},
-    temporary, brutal_kill, worker,
-    [ light_entity ]},
-  supervisor:start_child(?MODULE, Light).
+  gen_statem:call(light_entity,start).
 
 stop_lights() -> common_defs:stop_children(?MODULE).

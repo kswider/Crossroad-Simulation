@@ -24,21 +24,16 @@
 %%%===================================================================
 generate_cars(WorldParameters,0) -> done;
 generate_cars(WorldParameters,Amount) ->
-  Car = { {car, Amount},
-    {car_entity, start_link, [ WorldParameters ]},
+  UUID = gen_server:call(uuid_provider,next_pedestrian),
+  Car = { UUID,
+    {car_entity, start_link, [{WorldParameters,common_defs:get_random_car_start_point(WorldParameters),common_defs:random_destination()}]},
     temporary, brutal_kill, worker,
     [ car_entity ]},
   supervisor:start_child(?MODULE, Car),
   generate_cars(WorldParameters,Amount-1).
+
 kill_children() -> common_defs:stop_children(?MODULE).
-%%--------------------------------------------------------------------
-%% @doc
-%% Starts the supervisor
-%%
-%% @end
-%%--------------------------------------------------------------------
--spec(start_link(WorldParameters::any()) ->
-  {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
+
 start_link(WorldParameters) ->
   supervisor:start_link({local, ?SERVER}, ?MODULE, WorldParameters).
 
@@ -46,27 +41,12 @@ start_link(WorldParameters) ->
 %%% Supervisor callbacks
 %%%===================================================================
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Whenever a supervisor is started using supervisor:start_link/[2,3],
-%% this function is called by the new process to find out about
-%% restart strategy, maximum restart frequency and child
-%% specifications.
-%%
-%% @end
-%%--------------------------------------------------------------------
--spec(init(Args :: term()) ->
-  {ok, {SupFlags :: {RestartStrategy :: supervisor:strategy(),
-    MaxR :: non_neg_integer(), MaxT :: non_neg_integer()},
-    [ChildSpec :: supervisor:child_spec()]
-  }} |
-  ignore |
-  {error, Reason :: term()}).
 init(WorldParameters) ->
+  simulation_event_stream:component_ready(?MODULE),
+
   RestartStrategy = one_for_one,
-  MaxRestarts = 1000,
-  MaxSecondsBetweenRestarts = 3600,
+  MaxRestarts = 200,
+  MaxSecondsBetweenRestarts = 1,
 
   SupFlags = {RestartStrategy, MaxRestarts, MaxSecondsBetweenRestarts},
 
@@ -76,7 +56,3 @@ init(WorldParameters) ->
 
   %TODO: Check if SupFlags is ok (in rabbits restarts are loaded from world parameters, i dont know why :()
   {ok, {SupFlags, []}}.
-
-%%%===================================================================
-%%% Internal functions
-%%%===================================================================

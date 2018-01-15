@@ -34,11 +34,11 @@ start_link(WorldParameters) ->
 
 init(WorldParameters) ->
   Data = #light{pid = self,main_road = horizontal, waiting = [], world_parameters = WorldParameters},
-  erlang:start_timer(100, self(), start),
   {ok,not_started,Data}.
 
-not_started(info, {timeout,Tref,start}, Data) ->
-  {next_state, green, Data, [{state_timeout,Data#light.world_parameters#world_parameters.yellow_light_time,change_time}]}.
+%TODO: ERROR IS HERE
+not_started({call, From}, {start}, Data) ->
+  {next_state, green, Data, [{reply,From,starrted},{state_timeout,Data#light.world_parameters#world_parameters.yellow_light_time,change_time}]}.
 green(state_timeout,change_time,Data) ->
   case is_someone_on_sub_road() of
     true ->

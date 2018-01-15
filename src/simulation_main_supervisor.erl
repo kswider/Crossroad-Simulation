@@ -18,7 +18,7 @@
 %% Supervisor callbacks
 -export([init/1]).
 
--export([start_simulation/1,stop_simulation/0,generate_cars/1,generate_pedestrians/2]).
+-export([start_simulation/1,stop_simulation/0,generate_cars/2,generate_pedestrians/2]).
 -define(SERVER, ?MODULE).
 
 %%%===================================================================
@@ -27,7 +27,7 @@
 start_simulation(WorldParameters) -> simulations_supervisor:start_simulation(WorldParameters).
 stop_simulation() -> simulations_supervisor:stop_simulation().
 generate_pedestrians(WorldParameters,Amount) -> simulations_supervisor:generate_pedestrians(WorldParameters,Amount).
-generate_cars(Amount) -> simulations_supervisor:generate_cars(Amount).
+generate_cars(WorldParameters,Amount) -> simulations_supervisor:generate_cars(WorldParameters,Amount).
 %%--------------------------------------------------------------------
 %% @doc
 %% Starts the supervisor

@@ -17,7 +17,6 @@
 
 %% gen_server callbacks
 -export([init/1,
-  handle_call/3,
   handle_cast/2,
   handle_info/2,
   terminate/2,
@@ -25,41 +24,13 @@
 
 -define(SERVER, ?MODULE).
 
--record(state, {}).
-
 %%%===================================================================
 %%% API
 %%%===================================================================
 
-%%--------------------------------------------------------------------
-%% @doc
-%% Starts the server
-%%
-%% @end
-%%--------------------------------------------------------------------
--spec(start_link(WorldParameters::any()) ->
-  {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
 start_link(InitialState) ->
   gen_server:start_link(?MODULE, InitialState, []).
 
-%%%===================================================================
-%%% gen_server callbacks
-%%%===================================================================
-
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Initializes the server
-%%
-%% @spec init(Args) -> {ok, State} |
-%%                     {ok, State, Timeout} |
-%%                     ignore |
-%%                     {stop, Reason}
-%% @end
-%%--------------------------------------------------------------------
--spec(init(Args :: term()) ->
-  {ok, State :: #state{}} | {ok, State :: #state{}, timeout() | hibernate} |
-  {stop, Reason :: term()} | ignore).
 init({WorldParameters,Position,Directions}) ->
   State = #pedestrian{
     pid = self(),
@@ -71,52 +42,9 @@ init({WorldParameters,Position,Directions}) ->
   erlang:start_timer(State#pedestrian.world_parameters#world_parameters.pedestrian_speed, self(), make_next_step),
   {ok, State}.
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Handling call messages
-%%
-%% @end
-%%--------------------------------------------------------------------
--spec(handle_call(Request :: term(), From :: {pid(), Tag :: term()},
-    State :: #state{}) ->
-  {reply, Reply :: term(), NewState :: #state{}} |
-  {reply, Reply :: term(), NewState :: #state{}, timeout() | hibernate} |
-  {noreply, NewState :: #state{}} |
-  {noreply, NewState :: #state{}, timeout() | hibernate} |
-  {stop, Reason :: term(), Reply :: term(), NewState :: #state{}} |
-  {stop, Reason :: term(), NewState :: #state{}}).
-handle_call({are_you_at,X,Y}, From, State) ->
-  {reply, am_i_at(X,Y,State), State}.
-
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Handling cast messages
-%%
-%% @end
-%%--------------------------------------------------------------------
--spec(handle_cast(Request :: term(), State :: #state{}) ->
-  {noreply, NewState :: #state{}} |
-  {noreply, NewState :: #state{}, timeout() | hibernate} |
-  {stop, Reason :: term(), NewState :: #state{}}).
 handle_cast(_Request, State) ->
   {noreply, State}.
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Handling all non call/cast messages
-%%
-%% @spec handle_info(Info, State) -> {noreply, State} |
-%%                                   {noreply, State, Timeout} |
-%%                                   {stop, Reason, State}
-%% @end
-%%--------------------------------------------------------------------
--spec(handle_info(Info :: timeout() | term(), State :: #state{}) ->
-  {noreply, NewState :: #state{}} |
-  {noreply, NewState :: #state{}, timeout() | hibernate} |
-  {stop, Reason :: term(), NewState :: #state{}}).
 handle_info({timeout, _Ref, make_next_step}, State) ->
   case common_defs:should_dissapear(State#pedestrian.world_parameters,State#pedestrian.position) of
     true -> supervisor:terminate_child(simulation_pedestrians_supervisor,State#pedestrian.pid);
@@ -130,7 +58,7 @@ handle_info({timeout, _Ref, make_next_step}, State) ->
               erlang:start_timer(State#pedestrian.world_parameters#world_parameters.pedestrian_speed, self(), make_next_step),
               {noreply, NState};
             _ ->
-             simulation_event_stream:notify(pedestrian,self(),waits,State),
+             simulation_event_stream:notify(pedestrian,State#pedestrian.pid,waits,State),
              erlang:start_timer(State#pedestrian.world_parameters#world_parameters.pedestrian_speed, self(), make_next_step),
              {noreply, State}
           end;
@@ -142,34 +70,10 @@ handle_info({timeout, _Ref, make_next_step}, State) ->
       end
   end.
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% This function is called by a gen_server when it is about to
-%% terminate. It should be the opposite of Module:init/1 and do any
-%% necessary cleaning up. When it returns, the gen_server terminates
-%% with Reason. The return value is ignored.
-%%
-%% @spec terminate(Reason, State) -> void()
-%% @end
-%%--------------------------------------------------------------------
--spec(terminate(Reason :: (normal | shutdown | {shutdown, term()} | term()),
-    State :: #state{}) -> term()).
 terminate(_Reason, State) ->
   simulation_event_stream:notify(pedestrian,State#pedestrian.pid,disappeared,State),
   ok.
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Convert process state when code is changed
-%%
-%% @spec code_change(OldVsn, State, Extra) -> {ok, NewState}
-%% @end
-%%--------------------------------------------------------------------
--spec(code_change(OldVsn :: term() | {down, term()}, State :: #state{},
-    Extra :: term()) ->
-  {ok, NewState :: #state{}} | {error, Reason :: term()}).
 code_change(_OldVsn, State, _Extra) ->
   {ok, State}.
 
@@ -247,14 +151,14 @@ which_lights(State) ->
     _ -> get_main_road_lights
   end.
 
-is_free(State) -> true.
-  %Position = State#pedestrian.position
-  %Cars = supervisor:which_children(simulation_traffic_supervisor),
-  %NxtPosition = next_position(Position,[forward]),
-  %case ask_cars_for_position(Cars,NxtPosition#position.x,NxtPosition#position.y) of
-  %  free -> true;
-  %  _ -> false
-  %end.
+is_free(State) ->
+  Position = State#pedestrian.position,
+  Cars = supervisor:which_children(simulation_traffic_supervisor),
+  NxtPosition = next_position(State),
+  case ask_cars_for_position(Cars,NxtPosition#position.x,NxtPosition#position.y) of
+    free -> true;
+    _ -> false
+  end.
 
 ask_cars_for_position([], NxtPositionPositionX, NxtPositionPositionY) -> free;
 ask_cars_for_position([ {_Id, Car, _Type, _Modules} | Rest ], NxtPositionPositionX, NxtPositionPositionY) ->
@@ -266,6 +170,3 @@ ask_cars_for_position([ {_Id, Car, _Type, _Modules} | Rest ], NxtPositionPositio
   catch
     exit:_Reason -> not_free
   end.
-
-dissapear() ->
-  erlang:error(not_implemented).
