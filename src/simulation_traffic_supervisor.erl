@@ -22,7 +22,7 @@
 %%%===================================================================
 %%% API functions
 %%%===================================================================
-generate_cars(WorldParameters,0) -> done;
+generate_cars(_WorldParameters,0) -> done;
 generate_cars(WorldParameters,Amount) ->
   UUID = gen_server:call(uuid_provider,next_car),
   Car = { {car, UUID},
@@ -41,7 +41,7 @@ start_link(WorldParameters) ->
 %%% Supervisor callbacks
 %%%===================================================================
 
-init(WorldParameters) ->
+init(_WorldParameters) ->
   simulation_event_stream:component_ready(?MODULE),
 
   RestartStrategy = one_for_one,
@@ -49,10 +49,6 @@ init(WorldParameters) ->
   MaxSecondsBetweenRestarts = 1,
 
   SupFlags = {RestartStrategy, MaxRestarts, MaxSecondsBetweenRestarts},
-
-  Restart = permanent,
-  Shutdown = 2000,
-  Type = worker,
 
   %TODO: Check if SupFlags is ok (in rabbits restarts are loaded from world parameters, i dont know why :()
   {ok, {SupFlags, []}}.

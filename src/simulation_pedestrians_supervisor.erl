@@ -23,7 +23,7 @@
 %%%===================================================================
 %%% API functions
 %%%===================================================================
-generate_pedestrians(WorldParameters,0) ->
+generate_pedestrians(_WorldParameters,0) ->
   done;
 generate_pedestrians(WorldParameters,Amount) ->
   UUID = gen_server:call(uuid_provider,next_pedestrian),
@@ -66,7 +66,7 @@ start_link(WorldParameters) ->
   }} |
   ignore |
   {error, Reason :: term()}).
-init(WorldParameters) ->
+init(_WorldParameters) ->
   simulation_event_stream:component_ready(?MODULE),
 
   RestartStrategy = one_for_one,
@@ -75,11 +75,6 @@ init(WorldParameters) ->
 
   SupFlags = {RestartStrategy, MaxRestarts, MaxSecondsBetweenRestarts},
 
-  Restart = permanent,
-  Shutdown = 2000,
-  Type = worker,
-
-  %TODO: Check if SupFlags is ok (in rabbits restarts are loaded from world parameters, i dont know why :()
   {ok, {SupFlags, []}}.
 
 %%%===================================================================

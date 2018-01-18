@@ -46,8 +46,11 @@ init({WorldParameters,Position,Destination}) ->
   erlang:start_timer(State#car.world_parameters#world_parameters.car_speed, self(), make_next_step),
   {ok, State}.
 
-handle_call({are_you_at,X,Y}, From, State) ->
-  {reply, am_i_at(X,Y,State), State}.
+handle_call({are_you_at,PositionList}, _From, State) ->
+  {reply, am_i_at(PositionList,State), State};
+
+handle_call({are_you_at,X,Y}, _From, State) ->
+  {reply, am_i_at([{X,Y}],State), State}.
 
 handle_cast(_Request, State) ->
   {noreply, State}.
@@ -87,8 +90,11 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-am_i_at(X,Y,State) ->
-  (State#car.position#position.x == X) and (State#car.position#position.y == Y).
+am_i_at([],_State) -> false;
+am_i_at([{X,Y}|_PositionTail],State) when
+  (State#car.position#position.x == X) and (State#car.position#position.y == Y) ->
+  true;
+am_i_at([_|PositionTail],State) -> am_i_at(PositionTail,State).
 
 next_position(State) ->
   NState = estimate_next_position(State),
@@ -103,13 +109,12 @@ next_position(State) ->
 am_i_at_change_position(State) ->
   {X,Y} = {State#car.position#position.x,State#car.position#position.y},
   am_i_at_change_position({X,Y},common_defs:get_cars_turn_points(State#car.world_parameters)).
-am_i_at_change_position(Pos,[]) -> false;
-am_i_at_change_position(Pos,[Pos|T]) -> true;
+am_i_at_change_position(_Pos,[]) -> false;
+am_i_at_change_position(Pos,[Pos|_T]) -> true;
 am_i_at_change_position(Pos,[_|T]) -> am_i_at_change_position(Pos,T).
 
 make_turn(State) ->
-  H = State#car.destination,
-  case H of
+  case State#car.destination of
     forward -> State;
     left ->
       Position = State#car.position,
@@ -138,8 +143,8 @@ estimate_next_position(State) ->
   }}.
 
 am_i_entering_crossing(State) -> am_i_entering_crossing({State#car.position#position.x,State#car.position#position.y},common_defs:get_cars_enter_crossing_points(State#car.world_parameters)).
-am_i_entering_crossing(Pos,[]) -> false;
-am_i_entering_crossing(Pos,[Pos|T]) -> true;
+am_i_entering_crossing(_Pos,[]) -> false;
+am_i_entering_crossing(Pos,[Pos|_T]) -> true;
 am_i_entering_crossing(Pos,[_|T]) -> am_i_entering_crossing(Pos,T).
 
 is_light_green(State) ->
@@ -157,30 +162,7 @@ which_lights(State) ->
   end.
 
 is_free(State) ->
-  Position = State#car.position,
   Cars = supervisor:which_children(simulation_traffic_supervisor),
   Pedestrians = supervisor:which_children(simulation_pedestrians_supervisor),
   NxtPosition = next_position(State),
-  (ask_cars_for_position(Cars,NxtPosition#position.x,NxtPosition#position.y) == free) and (ask_pedestrians_for_position(Pedestrians,NxtPosition#position.x,NxtPosition#position.y) == free).
-
-ask_cars_for_position([], NxtPositionPositionX, NxtPositionPositionY) -> free;
-ask_cars_for_position([ {_Id, Car, _Type, _Modules} | Rest ], NxtPositionPositionX, NxtPositionPositionY) ->
-  try gen_server:call(Car, {are_you_at, NxtPositionPositionX, NxtPositionPositionY}) of
-    true ->
-      not_free;
-    false ->
-      ask_cars_for_position(Rest,NxtPositionPositionX,NxtPositionPositionY)
-  catch
-    exit:_Reason -> not_free
-  end.
-
-ask_pedestrians_for_position([], NxtPositionPositionX, NxtPositionPositionY) -> free;
-ask_pedestrians_for_position([ {_Id, Pedestrian, _Type, _Modules} | Rest ], NxtPositionPositionX, NxtPositionPositionY) ->
-  try gen_server:call(Pedestrian, {are_you_at, NxtPositionPositionX, NxtPositionPositionY}) of
-    true ->
-      not_free;
-    false ->
-      ask_cars_for_position(Rest,NxtPositionPositionX,NxtPositionPositionY)
-  catch
-    exit:_Reason -> not_free
-  end.
+  (common_defs:ask_cars_for_position(Cars,NxtPosition#position.x,NxtPosition#position.y) == free) and (common_defs:ask_pedestrians_for_position(Pedestrians,NxtPosition#position.x,NxtPosition#position.y) == free).

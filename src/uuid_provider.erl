@@ -77,9 +77,9 @@ init([]) ->
   {noreply, NewState :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term(), Reply :: term(), NewState :: #state{}} |
   {stop, Reason :: term(), NewState :: #state{}}).
-handle_call(next_pedestrian, From, {P,C}) ->
+handle_call(next_pedestrian, _From, {P,C}) ->
   {reply, P+1, {P+1,C}};
-handle_call(next_car, From, {P,C}) ->
+handle_call(next_car, _From, {P,C}) ->
   {reply, C+1, {P,C+1}}.
 
 %%--------------------------------------------------------------------

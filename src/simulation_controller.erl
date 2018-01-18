@@ -24,8 +24,6 @@
 
 -define(SERVER, ?MODULE).
 
--record(state, {}).
-
 %%%===================================================================
 %%% API
 %%%===================================================================
@@ -77,14 +75,14 @@ handle_call({generate_pedestrians, Amount}, _From, {started,WorldParameters}) ->
   simulation_main_supervisor:generate_pedestrians(WorldParameters,Amount),
   {reply, pedestrians_generated, {started,WorldParameters}};
 
-handle_call({generate_pedestrians, Amount}, _From, {stopped,WorldParameters}) ->
+handle_call({generate_pedestrians, _Amount}, _From, {stopped,WorldParameters}) ->
   {reply, pedestrians_not_generated, {stopped,WorldParameters}};
 
 handle_call({generate_cars, Amount}, _From, {started,WorldParameters}) ->
   simulation_main_supervisor:generate_cars(WorldParameters,Amount),
   {reply, cars_generated, {started,WorldParameters}};
 
-handle_call({generate_cars, Amount}, _From, {stopped,WorldParameters}) ->
+handle_call({generate_cars, _Amount}, _From, {stopped,WorldParameters}) ->
   {reply, cars_not_generated, {stopped,WorldParameters}}.
 
 handle_cast(_Request, State) ->

@@ -13,7 +13,7 @@
 
 -include("../include/records.hrl").
 %% API
--export([start_link/1]).
+-export([start_link/1, handle_call/3]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -74,18 +74,20 @@ terminate(_Reason, State) ->
   simulation_event_stream:notify(pedestrian,State#pedestrian.pid,disappeared,State),
   ok.
 
+handle_call({are_you_at,PositionList}, _From, State) ->
+  {reply, am_i_at(PositionList,State), State};
+
+handle_call({are_you_at,X,Y}, _From, State) ->
+  {reply, am_i_at([{X,Y}],State), State}.
+
 code_change(_OldVsn, State, _Extra) ->
   {ok, State}.
 
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-am_i_at(X,Y,State) ->
-  (State#pedestrian.position#position.x == X) and (State#pedestrian.position#position.y == Y).
 
 next_position(State) ->
-    [NxtTurn|Tail] = State#pedestrian.directions,
-    Position = State#pedestrian.position,
     NState = estimate_next_position(State),
   case am_i_at_change_position(State) of
     true ->
@@ -98,12 +100,12 @@ next_position(State) ->
 am_i_at_change_position(State) ->
   {X,Y} = {State#pedestrian.position#position.x,State#pedestrian.position#position.y},
   am_i_at_change_position({X,Y},common_defs:get_pedestrian_turn_points(State#pedestrian.world_parameters)).
-am_i_at_change_position(Pos,[]) -> false;
-am_i_at_change_position(Pos,[Pos|T]) -> true;
+am_i_at_change_position(_Pos,[]) -> false;
+am_i_at_change_position(Pos,[Pos|_T]) -> true;
 am_i_at_change_position(Pos,[_|T]) -> am_i_entering_zebra(Pos,T).
 
 make_turn(State) ->
-  [H|T] = State#pedestrian.directions,
+  [H|_T] = State#pedestrian.directions,
   case H of
     forward -> State;
     left ->
@@ -133,8 +135,8 @@ estimate_next_position(State) ->
   }}.
 
 am_i_entering_zebra(State) -> am_i_at_change_position({State#pedestrian.position#position.x,State#pedestrian.position#position.y},common_defs:get_pedestrian_enter_crossing_points(State#pedestrian.world_parameters)).
-am_i_entering_zebra(Pos,[]) -> false;
-am_i_entering_zebra(Pos,[Pos|T]) -> true;
+am_i_entering_zebra(_Pos,[]) -> false;
+am_i_entering_zebra(Pos,[Pos|_T]) -> true;
 am_i_entering_zebra(Pos,[_|T]) -> am_i_entering_zebra(Pos,T).
 
 is_light_green(State) ->
@@ -152,21 +154,15 @@ which_lights(State) ->
   end.
 
 is_free(State) ->
-  Position = State#pedestrian.position,
   Cars = supervisor:which_children(simulation_traffic_supervisor),
   NxtPosition = next_position(State),
-  case ask_cars_for_position(Cars,NxtPosition#position.x,NxtPosition#position.y) of
+  case common_defs:ask_cars_for_position(Cars,NxtPosition#position.x,NxtPosition#position.y) of
     free -> true;
     _ -> false
   end.
 
-ask_cars_for_position([], NxtPositionPositionX, NxtPositionPositionY) -> free;
-ask_cars_for_position([ {_Id, Car, _Type, _Modules} | Rest ], NxtPositionPositionX, NxtPositionPositionY) ->
-  try gen_server:call(Car, {are_you_at, NxtPositionPositionX, NxtPositionPositionY}) of
-    true ->
-      not_free;
-    false ->
-      ask_cars_for_position(Rest,NxtPositionPositionX,NxtPositionPositionY)
-  catch
-    exit:_Reason -> not_free
-  end.
+am_i_at([],_State) -> false;
+am_i_at([{X,Y}|_PositionTail],State) when
+  (State#pedestrian.position#position.x == X) and (State#pedestrian.position#position.y == Y) ->
+  true;
+am_i_at([_|PositionTail],State) -> am_i_at(PositionTail,State).

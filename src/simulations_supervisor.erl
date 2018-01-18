@@ -85,7 +85,7 @@ init(WorldParameters) ->
 %%% Internal functions
 %%%===================================================================
 
-start_lights(WorldParameters) ->
+start_lights(_WorldParameters) ->
   gen_statem:call(light_entity,start).
 
 stop_lights() -> common_defs:stop_children(?MODULE).
