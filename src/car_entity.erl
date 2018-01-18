@@ -54,7 +54,7 @@ handle_cast(_Request, State) ->
 
 handle_info({timeout, _Ref, make_next_step}, State) ->
   case common_defs:should_dissapear(State#car.world_parameters,State#car.position) of
-    true -> supervisor:terminate_child(simulation_traffic_supervisor,State#pedestrian.pid);
+    true -> supervisor:terminate_child(simulation_traffic_supervisor,State#car.pid);
     _ ->
       case am_i_entering_crossing(State) of
         true ->
@@ -71,8 +71,8 @@ handle_info({timeout, _Ref, make_next_step}, State) ->
           end;
         _ ->
           NState = next_position(State),
-          simulation_event_stream:notify(pedestrian,State#pedestrian.pid,move,State),
-          erlang:start_timer(State#pedestrian.world_parameters#world_parameters.pedestrian_speed, self(), make_next_step),
+          simulation_event_stream:notify(car,State#car.pid,move,State),
+          erlang:start_timer(State#car.world_parameters#world_parameters.car_speed, self(), make_next_step),
           {noreply, NState}
       end
   end.
@@ -157,7 +157,7 @@ which_lights(State) ->
   end.
 
 is_free(State) ->
-  Position = State#pedestrian.position,
+  Position = State#car.position,
   Cars = supervisor:which_children(simulation_traffic_supervisor),
   Pedestrians = supervisor:which_children(simulation_pedestrians_supervisor),
   NxtPosition = next_position(State),

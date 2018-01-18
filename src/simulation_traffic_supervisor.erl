@@ -24,8 +24,8 @@
 %%%===================================================================
 generate_cars(WorldParameters,0) -> done;
 generate_cars(WorldParameters,Amount) ->
-  UUID = gen_server:call(uuid_provider,next_pedestrian),
-  Car = { UUID,
+  UUID = gen_server:call(uuid_provider,next_car),
+  Car = { {car, UUID},
     {car_entity, start_link, [{WorldParameters,common_defs:get_random_car_start_point(WorldParameters),common_defs:random_destination()}]},
     temporary, brutal_kill, worker,
     [ car_entity ]},

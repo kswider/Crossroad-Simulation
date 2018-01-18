@@ -27,7 +27,7 @@ generate_pedestrians(WorldParameters,0) ->
   done;
 generate_pedestrians(WorldParameters,Amount) ->
   UUID = gen_server:call(uuid_provider,next_pedestrian),
-  Pedestrian = { {carrot, UUID},
+  Pedestrian = { {pedestrian, UUID},
     {pedestrian_entity, start_link, [{WorldParameters, common_defs:random_pedestrian_start_position(WorldParameters),common_defs:random_directions(3)}]},
     temporary, brutal_kill, worker,
     [ pedestrian_entity ]},

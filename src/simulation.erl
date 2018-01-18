@@ -22,14 +22,15 @@
 
 
 read_world_parameters_from_settings() ->
+  WorldWidth = application:get_env(crossroad_simulation,world_width,10),
+  WorldHeight = application:get_env(crossroad_simulation,world_height,10),
   MainLightsTime = application:get_env(crossroad_simulation, main_light_time, 10000),
   SubLightsTime = application:get_env(crossroad_simulation, sub_light_time, 10000),
   YellowLightsTime = application:get_env(crossroad_simulation, yellow_light_time, 3000),
   CarsStartAmmount = application:get_env(crossroad_simulation, cars_start_amount,3),
   PedestianStartAmmount = application:get_env(crossroad_simulation, pedestrian_start_amount,1),
   PedestrianSpeed = application:get_env(crossroad_simulation, pedestrian_speed, 1000),
-  WorldWidth = application:get_env(crossroad_simulation,world_width,10),
-  WorldHeight = application:get_env(crossroad_simulation,world_height,10),
+  CarSpeed = application:get_env(crossroad_simulation, car_speed, 1000),
 
   #world_parameters{
     main_light_time = MainLightsTime,
@@ -39,7 +40,8 @@ read_world_parameters_from_settings() ->
     pedestrian_start_amount = PedestianStartAmmount,
     pedestrian_speed = PedestrianSpeed,
     world_height = WorldHeight,
-    world_width = WorldWidth
+    world_width = WorldWidth,
+    car_speed = CarSpeed
   }.
 %%--------------------------------------------------------------------
 %% @private

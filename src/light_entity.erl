@@ -29,7 +29,7 @@
 
 -record(state, {}).
 
-start_link(WorldParameters) ->
+start_link([WorldParameters]) ->
   gen_statem:start_link({local,?SERVER}, ?MODULE, WorldParameters, []).
 
 init(WorldParameters) ->
@@ -37,8 +37,8 @@ init(WorldParameters) ->
   {ok,not_started,Data}.
 
 %TODO: ERROR IS HERE
-not_started({call, From}, {start}, Data) ->
-  {next_state, green, Data, [{reply,From,starrted},{state_timeout,Data#light.world_parameters#world_parameters.yellow_light_time,change_time}]}.
+not_started({call, From}, start, Data) ->
+  {next_state, green, Data, [{reply,From,started},{state_timeout,Data#light.world_parameters#world_parameters.yellow_light_time,change_time}]}.
 green(state_timeout,change_time,Data) ->
   case is_someone_on_sub_road() of
     true ->
