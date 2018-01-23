@@ -82,9 +82,7 @@ handle_event(_, _, Data) ->
 is_someone_on_main_road(Data) ->
   Cars = supervisor:which_children(simulation_traffic_supervisor),
   Pedestrians = supervisor:which_children(simulation_pedestrians_supervisor),
-  PedestrianWaiting = are_pedestrian_waiting(Pedestrians,common_defs:get_pedestrians_sub_road_enter_crossing_points(Data#light.world_parameters)),
-  CarsWaiting = are_cars_waiting(Cars,common_defs:get_cars_main_enter_crossing_points(Data#light.world_parameters)),
-  PedestrianWaiting and CarsWaiting.
+  true.
 
 are_pedestrian_waiting(_Pedestrian,[]) ->
   false;
@@ -105,9 +103,7 @@ are_cars_waiting(Cars,[{X,Y,_,_}|PosTail]) ->
 is_someone_on_sub_road(Data) ->
   Cars = supervisor:which_children(simulation_traffic_supervisor),
   Pedestrians = supervisor:which_children(simulation_pedestrians_supervisor),
-  PedestrianWaiting = are_pedestrian_waiting(Pedestrians,common_defs:get_pedestrians_sub_road_enter_crossing_points(Data#light.world_parameters)),
-  CarsWaiting = are_cars_waiting(Cars,common_defs:get_cars_sub_road_enter_crossing_points(Data#light.world_parameters)),
-  PedestrianWaiting and CarsWaiting.
+  true.
 
 
 terminate(_Reason, _State, _Data) ->

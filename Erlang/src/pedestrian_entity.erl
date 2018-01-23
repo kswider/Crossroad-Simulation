@@ -31,7 +31,7 @@
 start_link(InitialState) ->
   gen_server:start_link(?MODULE, InitialState, []).
 
-init({WorldParameters,Position,Directions}) ->
+init({WorldParameters,{Position,Directions}}) ->
   State = #pedestrian{
     pid = self(),
     position = Position,
@@ -89,7 +89,7 @@ code_change(_OldVsn, State, _Extra) ->
 
 next_position(State) ->
     NState = estimate_next_position(State),
-  case am_i_at_change_position(State) of
+  case am_i_at_change_position(NState) of
     true ->
       NNState = make_turn(NState),
       NNState;
@@ -98,11 +98,10 @@ next_position(State) ->
   end.
 
 am_i_at_change_position(State) ->
-  {X,Y} = {State#pedestrian.position#position.x,State#pedestrian.position#position.y},
-  am_i_at_change_position({X,Y},common_defs:get_pedestrian_turn_points(State#pedestrian.world_parameters)).
+  am_i_at_change_position(State#pedestrian.position,common_defs:get_turn_points(pedestrian,State#pedestrian.world_parameters)).
 am_i_at_change_position(_Pos,[]) -> false;
-am_i_at_change_position(Pos,[Pos|_T]) -> true;
-am_i_at_change_position(Pos,[_|T]) -> am_i_entering_zebra(Pos,T).
+am_i_at_change_position({_,X,Y,_,_},[{_,X,Y,_,_}|_T]) -> true;
+am_i_at_change_position(Pos,[_|T]) -> am_i_at_change_position(Pos,T).
 
 make_turn(State) ->
   [H|_T] = State#pedestrian.directions,
@@ -134,28 +133,28 @@ estimate_next_position(State) ->
     y = Position#position.y + Position#position.look_y
   }}.
 
-am_i_entering_zebra(State) -> am_i_at_change_position({State#pedestrian.position#position.x,State#pedestrian.position#position.y},common_defs:get_pedestrian_enter_crossing_points(State#pedestrian.world_parameters)).
+am_i_entering_zebra(State) -> am_i_entering_zebra(State#pedestrian.position,
+  common_defs:get_waiting_points(pedestrian,State#pedestrian.world_parameters)).
 am_i_entering_zebra(_Pos,[]) -> false;
 am_i_entering_zebra(Pos,[Pos|_T]) -> true;
 am_i_entering_zebra(Pos,[_|T]) -> am_i_entering_zebra(Pos,T).
 
 is_light_green(State) ->
-  Position = State#pedestrian.position,
-  case gen_statem:call(light_entity,which_lights(Position)) of
+  case gen_statem:call(light_entity,which_lights(State)) of
     green -> true;
     _ -> false
   end.
 
 which_lights(State) ->
   Position = State#pedestrian.position,
-  case ((Position#position.look_x == 1) and (Position#position.look_y == 0)) of
+  case (Position#position.look_x == 0) of
     true -> get_sub_road_lights;
     _ -> get_main_road_lights
   end.
 
 is_free(State) ->
   Cars = supervisor:which_children(simulation_traffic_supervisor),
-  NxtPosition = next_position(State),
+  NxtPosition = (next_position(State))#pedestrian.position,
   case common_defs:ask_cars_for_position(Cars,NxtPosition#position.x,NxtPosition#position.y) of
     free -> true;
     _ -> false
