@@ -26,7 +26,7 @@ generate_cars(_WorldParameters,0) -> done;
 generate_cars(WorldParameters,Amount) ->
   UUID = gen_server:call(uuid_provider,next_car),
   Car = { {car, UUID},
-    {car_entity, start_link, [{WorldParameters,common_defs:get_random_car_start_point(WorldParameters),common_defs:random_destination()}]},
+    {car_entity, start_link, [{WorldParameters,common_defs:get_random(car,WorldParameters)}]},
     temporary, brutal_kill, worker,
     [ car_entity ]},
   supervisor:start_child(?MODULE, Car),

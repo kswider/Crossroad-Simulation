@@ -11,7 +11,8 @@
 
 -include("../include/records.hrl").
 %% API
--export([stop_children/1, random_directions/1, random_destination/0, random_direction/0, random_pedestrian_start_position/1, get_pedestrian_turn_points/1, get_pedestrian_enter_crossing_points/1, get_pedestrians_start_points/1, should_dissapear/2, get_cars_start_points/1, get_cars_enter_crossing_points/1, get_random_car_start_point/1, get_cars_turn_points/1, ask_cars_for_position/3, ask_pedestrians_for_position/3, get_cars_main_enter_crossing_points/1, get_cars_sub_road_enter_crossing_points/1, get_pedestrians_main_road_enter_crossing_points/1, get_pedestrians_sub_road_enter_crossing_points/1]).
+-export([get_start_points/2,get_turn_points/2,get_waiting_points/2,get_random/2]).
+-export([stop_children/1,ask_pedestrians_for_position/3,ask_cars_for_position/3,should_dissapear/2]).
 
 stop_children(SupervisorName) ->
   [ Pid ! stop_entity || {_, Pid, _, _} <- supervisor:which_children(SupervisorName) ].
@@ -35,92 +36,79 @@ random_directions(N,List) ->
 
 random_destination() -> random_direction().
 
-random_pedestrian_start_position(WorldParameters) ->
+get_start_points(pedestrian,_WorldParameters) ->
+  [
+    #position{x = 4, y = 0, look_x = 0, look_y = 1},
+    #position{x = 11, y = 0, look_x = 0, look_y = 1},
+    #position{x = 15, y = 4, look_x = -1, look_y = 0},
+    #position{x = 15, y = 10, look_x = -1, look_y = 0},
+    #position{x = 11, y = 15, look_x = 0, look_y = -1},
+    #position{x = 4, y = 15, look_x = 0, look_y = -1},
+    #position{x = 0, y = 11, look_x = 1, look_y = 0},
+    #position{x = 0, y = 4, look_x = 1, look_y = 0}
+  ];
+get_start_points(car,_WorldParameters) ->
+  [
+    #position{x = 8, y = 0, look_x = 0, look_y = 1},
+    #position{x = 15, y = 8, look_x = -1, look_y = 0},
+    #position{x = 7, y = 15, look_x = 0, look_y = -1},
+    #position{x = 0, y = 7, look_x = 1, look_y = 0}
+  ].
+
+get_waiting_points(pedestrian,_WorldParameters) ->
+  [
+    #position{x = 6, y = 4, look_x = 1, look_y = 0},
+    #position{x = 9, y = 0, look_x = -1, look_y = 0},
+    #position{x = 11, y = 6, look_x = 0, look_y = 1},
+    #position{x = 11, y = 9, look_x = 0, look_y = -1},
+    #position{x = 9, y = 11, look_x = -1, look_y = 0},
+    #position{x = 6, y = 11, look_x = 1, look_y = 0},
+    #position{x = 4, y = 9, look_x = 0, look_y = -1},
+    #position{x = 4, y = 6, look_x = 0, look_y = 1}
+  ];
+
+get_waiting_points(car,_WorldParameters) ->
+  [
+    #position{x = 8, y = 3, look_x = 0, look_y = 1},
+    #position{x = 7, y = 12, look_x = 0, look_y = -1},
+    #position{x = 3, y = 7, look_x = 1, look_y = 0},
+    #position{x = 12, y = 8, look_x = -1, look_y = 0}
+  ].
+
+get_turn_points(car,_WorldParameters) ->
+  [
+    #position{x = 8, y = 8, look_x = 0, look_y = 1},
+    #position{x = 7, y = 7, look_x = 0, look_y = -1},
+    #position{x = 8, y = 7, look_x = 1, look_y = 0},
+    #position{x = 7, y = 8, look_x = -1, look_y = 0}
+  ];
+
+get_turn_points(pedestrian,_WorldParameters) ->
+  [
+    #position{x = 4, y = 4, look_x = 0, look_y = 0},
+    #position{x = 4, y = 11, look_x = 0, look_y = 0},
+    #position{x = 11, y = 11, look_x = 0, look_y = 0},
+    #position{x = 11, y = 4, look_x = 0, look_y = 0}
+  ].
+
+get_random(pedestrian,WorldParameters) ->
   random:seed(erlang:phash2([node()]),
     erlang:monotonic_time(),
     erlang:unique_integer()),
-  {X,Y,LookX,LookY} = lists:nth(random:uniform(8),get_pedestrians_start_points(WorldParameters)),
-  #position{
-    x = X,
-    y = Y,
-    look_x = LookX,
-    look_y = LookY
-  }.
-
-get_pedestrians_start_points(WorldParameters) ->
-  Y = WorldParameters#world_parameters.world_height - 1,
-  X = WorldParameters#world_parameters.world_width - 1,
-  {X1,X2} = case X rem 2 of
-              0 -> {X div 2-3,X div 2+3};
-              1 -> {X div 2-3,X div 2+4}
-            end,
-  {Y1,Y2} = case Y rem 2 of
-              0 -> {Y div 2-3,Y div 2+3};
-              1 -> {Y div 2-3,Y div 2+4}
-            end,
-  [{X1,0,0,1},{X1,Y,0,-1},{X2,0,0,1},{X2,Y,0,-1},{0,Y1,1,0},{X,Y1,-1,0},{0,Y2,1,0},{X,Y2,-1,0}].
-
-get_random_car_start_point(WorldParameters) ->
+  Pos = lists:nth(random:uniform(8),get_start_points(pedestrian,WorldParameters)),
+  Direct = random_directions(4),
+  {Pos,Direct};
+get_random(car,WorldParameters) ->
   random:seed(erlang:phash2([node()]),
     erlang:monotonic_time(),
     erlang:unique_integer()),
-  {X,Y,LookX,LookY} = lists:nth(random:uniform(4),get_pedestrians_start_points(WorldParameters)),
-  #position{
-    x = X,
-    y = Y,
-    look_x = LookX,
-    look_y = LookY
-  }.
+  Pos = lists:nth(random:uniform(4),get_start_points(car,WorldParameters)),
+  Dest = random_destination(),
+  {Pos,Dest}.
 
-get_pedestrian_turn_points(WorldParameters) ->
-  Y = WorldParameters#world_parameters.world_height - 1,
-  X = WorldParameters#world_parameters.world_width - 1,
-  {X1,X2} = case X rem 2 of
-              0 -> {X div 2-3,X div 2+3};
-              1 -> {X div 2-3,X div 2+4}
-            end,
-  {Y1,Y2} = case Y rem 2 of
-              0 -> {Y div 2-3,Y div 2+3};
-              1 -> {Y div 2-3,Y div 2+4}
-            end,
-  [{X1,Y1},{X1,Y2},{X2,Y1},{X2,Y2}].
-
-get_pedestrian_enter_crossing_points(WorldParameters) ->
-  Y = WorldParameters#world_parameters.world_height - 1,
-  X = WorldParameters#world_parameters.world_width - 1,
-  {X1,X2} = case X  rem  2 of
-              0 -> {X rem 2-3,X rem 2+3};
-              1 -> {X rem 2-3,X rem 2+4}
-            end,
-  {Y1,Y2} = case Y  rem  2 of
-              0 -> {Y rem 2-3,Y rem 2+3};
-              1 -> {Y rem 2-3,Y rem 2+4}
-            end,
-  [{X1+1,Y1,1,0},{X1+1,Y2,1,0},{X2-1,Y1,-1,0},{X2-1,Y2,-1,0},{X1,Y1+1,0,1},{X1,Y2-1,0,-1},{X2,Y1+1,0,1},{X2,Y2-1,0,-1}].
-
-get_cars_start_points(WorldParameters) ->
-  Y = WorldParameters#world_parameters.world_height - 1,
-  X = WorldParameters#world_parameters.world_width - 1,
-  {X1,X2} = case X rem 2 of
-              0 -> {X div 2-1,X div 2+1};
-              1 -> {X div 2-1,X div 2+2}
-            end,
-  {Y1,Y2} = case Y rem 2 of
-              0 -> {Y div 2-1,Y div 2+1};
-              1 -> {Y div 2-1,Y div 2+2}
-            end,
-  [{0,Y1,1,0},{X,Y2,-1,0},{X1,0,0,1},{X2,Y,0,-1}].
-
-get_cars_enter_crossing_points(WorldParameters) -> todo ,[].
-get_pedestrians_sub_road_enter_crossing_points(WorldParameters) -> todo, [].
-get_pedestrians_main_road_enter_crossing_points(WorldParameters) -> todo, [].
-get_cars_sub_road_enter_crossing_points(WorldParameters) -> todo, [].
-get_cars_main_enter_crossing_points(WorldParameters) -> todo, [].
-get_cars_turn_points(WorldParameters) -> todo, [].
-
-should_dissapear(WorldParameters,Position) ->
-  (Position#position.x < 0) or (Position#position.x > WorldParameters#world_parameters.world_width-1) or
-    (Position#position.y < 0) or (Position#position.y > WorldParameters#world_parameters.world_height-1).
+should_dissapear(_WorldParameters,Position) ->
+  (Position#position.x < 0) or (Position#position.x > 15) or
+    (Position#position.y < 0) or (Position#position.y > 15).
 
 ask_cars_for_position([], _NxtPositionPositionX, _NxtPositionPositionY) -> free;
 ask_cars_for_position([ {_Id, Car, _Type, _Modules} | Rest ], NxtPositionPositionX, NxtPositionPositionY) ->

@@ -35,7 +35,7 @@ start_link(InitialState) ->
 %%% gen_server callbacks
 %%%===================================================================
 
-init({WorldParameters,Position,Destination}) ->
+init({WorldParameters,{Position,Destination}}) ->
   State = #car{
     pid = self(),
     position = Position,
@@ -142,7 +142,7 @@ estimate_next_position(State) ->
     y = Position#position.y + Position#position.look_y
   }}.
 
-am_i_entering_crossing(State) -> am_i_entering_crossing({State#car.position#position.x,State#car.position#position.y},common_defs:get_cars_enter_crossing_points(State#car.world_parameters)).
+am_i_entering_crossing(State) -> am_i_entering_crossing(State#car.position,common_defs:get_waiting_points(car,State#car.world_parameters)).
 am_i_entering_crossing(_Pos,[]) -> false;
 am_i_entering_crossing(Pos,[Pos|_T]) -> true;
 am_i_entering_crossing(Pos,[_|T]) -> am_i_entering_crossing(Pos,T).
@@ -156,7 +156,7 @@ is_light_green(State) ->
 
 which_lights(State) ->
   Position = State#car.position,
-  case ((Position#position.look_x == 1) and (Position#position.look_y == 0)) of
+  case (Position#position.look_x == 0) of
     true -> get_main_road_lights;
     _ -> get_sub_road_lights
   end.
