@@ -38,7 +38,6 @@ public class CrossroadController : MonoBehaviour {
 	// Use this for initialization
 	void Start () {
         StartServer();
-        but.onClick.AddListener(sendmsg);
 
     }
 
@@ -97,7 +96,7 @@ public class CrossroadController : MonoBehaviour {
                     go.name = pid;
                     float x = float.Parse(json["position_x"].ToString()) * 2;
                     float z = float.Parse(json["position_y"].ToString()) * 2;
-                    go.transform.position.Set(x, 0.375f, z);
+                    go.transform.position = new Vector3(x, 0.375f, z);
                     break;
                 case "pedestrian_disappeared":
                     pid = json["pid"].ToString();
@@ -109,7 +108,7 @@ public class CrossroadController : MonoBehaviour {
                     go = GameObject.Find(pid);
                     x = float.Parse(json["position_x"].ToString()) * 2;
                     z = float.Parse(json["position_y"].ToString()) * 2;
-                    go.transform.position.Set(x, 0.5f, z);
+                    go.transform.position = new Vector3(x, 0.375f, z);
                     break;
                 case "car_spawned":
                     pid = json["pid"].ToString();
@@ -117,7 +116,7 @@ public class CrossroadController : MonoBehaviour {
                     go.name = pid;
                     x = float.Parse(json["position_x"].ToString()) * 2;
                     z = float.Parse(json["position_y"].ToString()) * 2;
-                    go.transform.position.Set(x, 0, z);
+                    go.transform.position = new Vector3(x, 0.375f, z);
                     break;
                 case "car_disappeared":
                     pid = json["pid"].ToString();
@@ -129,7 +128,7 @@ public class CrossroadController : MonoBehaviour {
                     go = GameObject.Find(pid);
                     x = float.Parse(json["position_x"].ToString()) * 2;
                     z = float.Parse(json["position_y"].ToString()) * 2;
-                    go.transform.position.Set(x, 0, z);
+                    go.transform.position = new Vector3(x, 0.375f, z);
                     break;
                 case "lights_changes_to_red":
                     ChangeLights("red");
