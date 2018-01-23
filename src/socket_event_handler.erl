@@ -1,13 +1,13 @@
 %%%-------------------------------------------------------------------
-%%% @author motek
+%%% @author Krzysiek
 %%% @copyright (C) 2018, <COMPANY>
 %%% @doc
 %%%
 %%% @end
-%%% Created : 09. Jan 2018 13:56
+%%% Created : 20. sty 2018 23:28
 %%%-------------------------------------------------------------------
--module(default_event_handler).
--author("motek").
+-module(socket_event_handler).
+-author("Krzysiek").
 
 -behaviour(gen_event).
 
@@ -88,47 +88,53 @@ init([]) ->
   remove_handler).
 
 handle_event({pedestrian,Pid,spawned,PedestrianState}, State) ->
-  io:format("Pedestrian ~w spawned at <~w,~w> ~n",[Pid,PedestrianState#pedestrian.position#position.x,PedestrianState#pedestrian.position#position.y]),
+  %io:format("Pedestrian ~w spawned at <~w,~w> ~n",[Pid,PedestrianState#pedestrian.position#position.x,PedestrianState#pedestrian.position#position.y]),
+  X = 1,
+  Y = 1,
+  gen_tcp:send(Socket,<<"{\"action\":\"pedestrian_spawned\",\"pid\":",Pid/binary,",\"position_x\":",X,",\"position_y\":",Y,"}">>),
+  PedestrianState#pedestrian.position#position.x,
   {ok, State};
 handle_event({pedestrian,Pid,disappeared,_PedestrianState}, State) ->
-  io:format("Pedestrian ~w disappeared ~n",[Pid]),
+  %io:format("Pedestrian ~w disappeared ~n",[Pid]),
+  gen_tcp:send(Socket,<<"{\"action\":\"pedestrian_disappeared\",\"pid\":",Pid/binary,"}">>),
   {ok, State};
 handle_event({pedestrian,Pid,move,PedestrianState}, State) ->
-  io:format("Pedestrian ~w moves to <~w,~w> ~n",[Pid,PedestrianState#pedestrian.position#position.x,PedestrianState#pedestrian.position#position.y]),
-  {ok, State};
-handle_event({pedestrian,Pid,waits,PedestrianState}, State) ->
-  io:format("Pedestrian ~w waits at <~w,~w> ~n",[Pid,PedestrianState#pedestrian.position#position.x,PedestrianState#pedestrian.position#position.y]),
+  %io:format("Pedestrian ~w moves to <~w,~w> ~n",[Pid,PedestrianState#pedestrian.position#position.x,PedestrianState#pedestrian.position#position.y]),
+  gen_tcp:send(Socket,<<"{\"action\":\"pedestrian_move\",\"pid\":",Pid/binary,",\"position_x\":",X,",\"position_y\":",Y,"}">>),
   {ok, State};
 
 handle_event({car,spawned,_CarState}, State) ->
-  io:format("Car spawned ~n"),
+  %io:format("Car spawned ~n"),
+  gen_tcp:send(Socket,<<"{\"action\":\"car_spawned\",\"pid\":",Pid/binary,",\"position_x\":",X,",\"position_y\":",Y,"}">>),
   {ok, State};
 handle_event({car,disappeared,_CarState}, State) ->
-  io:format("Car disappeard ~n"),
+  %io:format("Car disappeard ~n"),
+  gen_tcp:send(Socket,<<"{\"action\":\"car_disappeared\",\"pid\":",Pid/binary,"}">>),
   {ok, State};
 
 handle_event({lights,started,_CarState}, State) ->
-  io:format("Lights started ~n"),
+  %io:format("Lights started ~n"),
   {ok, State};
 
 handle_event({lights,stopped,_CarState}, State) ->
-  io:format("Lights disappeared ~n"),
+  %io:format("Lights disappeared ~n"),
   {ok, State};
 
 handle_event({lights,changes_to_red,_Data}, State) ->
-  io:format("Main lights are red. Sub lights are green ~n"),
+  %io:format("Main lights are red. Sub lights are green ~n"),
+  gen_tcp:send(Socket,<<"{\"action\":\"lights_changes_to_green\"}">>),
   {ok, State};
 
 handle_event({lights,changes_to_yellow,_Data}, State) ->
-  io:format("Main lights are yellow. Sub lights are yellow ~n"),
+  %io:format("Main lights are yellow. Sub lights are yellow ~n"),
   {ok, State};
 
 handle_event({lights,changes_to_green,_Data}, State) ->
-  io:format("Main lights are green. Sub lights are red ~n"),
+  %io:format("Main lights are green. Sub lights are red ~n"),
+  gen_tcp:send(Socket,<<"{\"action\":\"lights_changes_to_red\"}">>),
   {ok, State};
 
-handle_event(Msg,State) ->
-  io:format("Not handled event happned!  <~w> ~n",[Msg]),
+handle_event(_Event, State) ->
   {ok, State}.
 
 %%--------------------------------------------------------------------
