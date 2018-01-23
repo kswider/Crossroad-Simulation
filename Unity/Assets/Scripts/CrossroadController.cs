@@ -95,9 +95,9 @@ public class CrossroadController : MonoBehaviour {
                     pid = json["pid"].ToString();
                     go = GameObject.Instantiate(pedestrian);
                     go.name = pid;
-                    float x = float.Parse(json["position_x"].ToString());
-                    float z = float.Parse(json["position_y"].ToString());
-                    go.transform.position.Set(x, 0, z);
+                    float x = float.Parse(json["position_x"].ToString()) * 2;
+                    float z = float.Parse(json["position_y"].ToString()) * 2;
+                    go.transform.position.Set(x, 0.375f, z);
                     break;
                 case "pedestrian_disappeared":
                     pid = json["pid"].ToString();
@@ -107,16 +107,16 @@ public class CrossroadController : MonoBehaviour {
                 case "pedestrian_move":
                     pid = json["pid"].ToString();
                     go = GameObject.Find(pid);
-                    x = float.Parse(json["position_x"].ToString());
-                    z = float.Parse(json["position_y"].ToString());
-                    go.transform.position.Set(x, 0, z);
+                    x = float.Parse(json["position_x"].ToString()) * 2;
+                    z = float.Parse(json["position_y"].ToString()) * 2;
+                    go.transform.position.Set(x, 0.5f, z);
                     break;
                 case "car_spawned":
                     pid = json["pid"].ToString();
                     go = GameObject.Instantiate(car);
                     go.name = pid;
-                    x = float.Parse(json["position_x"].ToString());
-                    z = float.Parse(json["position_y"].ToString());
+                    x = float.Parse(json["position_x"].ToString()) * 2;
+                    z = float.Parse(json["position_y"].ToString()) * 2;
                     go.transform.position.Set(x, 0, z);
                     break;
                 case "car_disappeared":
@@ -127,8 +127,8 @@ public class CrossroadController : MonoBehaviour {
                 case "car_move":
                     pid = json["pid"].ToString();
                     go = GameObject.Find(pid);
-                    x = float.Parse(json["position_x"].ToString());
-                    z = float.Parse(json["position_y"].ToString());
+                    x = float.Parse(json["position_x"].ToString()) * 2;
+                    z = float.Parse(json["position_y"].ToString()) * 2;
                     go.transform.position.Set(x, 0, z);
                     break;
                 case "lights_changes_to_red":
