@@ -108,7 +108,7 @@ public class CrossroadController : MonoBehaviour {
                     go = GameObject.Find(pid);
                     x = float.Parse(json["position_x"].ToString()) * 2;
                     z = float.Parse(json["position_y"].ToString()) * 2;
-                    go.transform.position = new Vector3(x, 0.375f, z);
+                    StartCoroutine(MoveObject(go, new Vector3(x, 0.375f, z)));
                     break;
                 case "car_spawned":
                     pid = json["pid"].ToString();
@@ -130,12 +130,25 @@ public class CrossroadController : MonoBehaviour {
                     z = float.Parse(json["position_y"].ToString()) * 2;
                     go.transform.position = new Vector3(x, 0.375f, z);
                     break;
-                case "lights_changes_to_red":
-                    ChangeLights("red");
-                    break;
                 case "lights_changes_to_green":
                     ChangeLights("green");
                     break;
+                case "lights_changes_to_red":
+                    ChangeLights("red");
+                    break;
+            }
+        }
+    }
+
+    private IEnumerator MoveObject(GameObject obj,Vector3 newPosition)
+    {
+        Vector3 distance = (newPosition - obj.transform.position)/10;
+        for (int i = 0; i < 10; i++)
+        {
+            if (obj != null)
+            {
+                obj.transform.position += distance;
+                yield return new WaitForSeconds(0.1f);
             }
         }
     }
