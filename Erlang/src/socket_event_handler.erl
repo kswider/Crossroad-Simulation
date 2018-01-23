@@ -68,8 +68,8 @@ add_handler() ->
   {ok, State :: #state{}} |
   {ok, State :: #state{}, hibernate} |
   {error, Reason :: term()}).
-init([]) ->
-  {ok, #state{}}.
+init(Socket) ->
+  {ok, #state{socket = Socket}}.
 
 %%--------------------------------------------------------------------
 %% @private
