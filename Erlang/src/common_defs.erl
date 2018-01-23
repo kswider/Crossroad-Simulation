@@ -41,7 +41,7 @@ get_start_points(pedestrian,_WorldParameters) ->
     #position{x = 4, y = 0, look_x = 0, look_y = 1},
     #position{x = 11, y = 0, look_x = 0, look_y = 1},
     #position{x = 15, y = 4, look_x = -1, look_y = 0},
-    #position{x = 15, y = 10, look_x = -1, look_y = 0},
+    #position{x = 15, y = 11, look_x = -1, look_y = 0},
     #position{x = 11, y = 15, look_x = 0, look_y = -1},
     #position{x = 4, y = 15, look_x = 0, look_y = -1},
     #position{x = 0, y = 11, look_x = 1, look_y = 0},

@@ -148,8 +148,8 @@ is_light_green(State) ->
 which_lights(State) ->
   Position = State#pedestrian.position,
   case (Position#position.look_x == 0) of
-    true -> get_sub_road_lights;
-    _ -> get_main_road_lights
+    true -> get_main_road_lights;
+    _ -> get_sub_road_lights
   end.
 
 is_free(State) ->
