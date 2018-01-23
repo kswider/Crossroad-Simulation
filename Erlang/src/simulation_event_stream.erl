@@ -14,8 +14,10 @@
 
 start_link() ->
   {ok, Pid} = gen_event:start_link({local, ?MODULE}),
-
-  gen_event:add_handler(?MODULE, default_event_handler, []),
+  {ok,Socket} = gen_tcp:listen(12345, [{active,true}, binary,{packet,2}]),
+  {ok,AcceptSocket} = gen_tcp:accept(Socket),
+  gen_event:add_handler(?MODULE, socket_event_handler, [AcceptSocket]),
+  %gen_event:add_handler(?MODULE, default_event_handler, []),
   component_ready(?MODULE),
 
   {ok, Pid}.

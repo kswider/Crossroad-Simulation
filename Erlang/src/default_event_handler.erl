@@ -99,9 +99,6 @@ handle_event({pedestrian,Pid,move,PedestrianState}, State) ->
 handle_event({pedestrian,Pid,waits,PedestrianState}, State) ->
   io:format("Pedestrian ~w waits at <~w,~w> ~n",[Pid,PedestrianState#pedestrian.position#position.x,PedestrianState#pedestrian.position#position.y]),
   {ok, State};
-handle_event({pedestrian,Pid,disappeared,_PedestrianState}, State) ->
-  io:format("Pedestrian ~w disappears ~n",[Pid]),
-  {ok, State};
 
 handle_event({car,spawned,_CarState}, State) ->
   io:format("Car spawned ~n"),
