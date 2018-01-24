@@ -12,7 +12,7 @@
 -include("../include/records.hrl").
 %% API
 -export([get_start_points/2,get_turn_points/2,get_waiting_points/2,get_random/2]).
--export([stop_children/1,ask_pedestrians_for_position/3,ask_cars_for_position/3,should_dissapear/2]).
+-export([stop_children/1,ask_pedestrians_for_position/3,ask_cars_for_position/4,should_dissapear/2]).
 
 stop_children(SupervisorName) ->
   [ Pid ! stop_entity || {_, Pid, _, _} <- supervisor:which_children(SupervisorName) ].
@@ -110,24 +110,28 @@ should_dissapear(_WorldParameters,Position) ->
   (Position#position.x < 0) or (Position#position.x > 15) or
     (Position#position.y < 0) or (Position#position.y > 15).
 
-ask_cars_for_position([], _NxtPositionPositionX, _NxtPositionPositionY) -> free;
-ask_cars_for_position([ {_Id, Car, _Type, _Modules} | Rest ], NxtPositionPositionX, NxtPositionPositionY) ->
+ask_cars_for_position([], _NxtPositionPositionX, _NxtPositionPositionY, _MyPid) -> free;
+ask_cars_for_position([ {_Id, MyPid, _Type, _Modules} | Rest ], NxtPositionPositionX, NxtPositionPositionY, MyPid) ->
+  ask_cars_for_position(Rest,NxtPositionPositionX,NxtPositionPositionY,MyPid);
+ask_cars_for_position([ {_Id, Car, _Type, _Modules} | Rest ], NxtPositionPositionX, NxtPositionPositionY, MyPid) ->
+  simulation_event_stream:notify(sadas,sssssss,ssssssssss2),
   try gen_server:call(Car, {are_you_at, NxtPositionPositionX, NxtPositionPositionY}) of
     true ->
       not_free;
     false ->
-      ask_cars_for_position(Rest,NxtPositionPositionX,NxtPositionPositionY)
+      ask_cars_for_position(Rest,NxtPositionPositionX,NxtPositionPositionY,MyPid)
   catch
     exit:_Reason -> not_free
   end.
 
 ask_pedestrians_for_position([], _NxtPositionPositionX, _NxtPositionPositionY) -> free;
 ask_pedestrians_for_position([ {_Id, Pedestrian, _Type, _Modules} | Rest ], NxtPositionPositionX, NxtPositionPositionY) ->
+  simulation_event_stream:notify(sadas,sssssss,ssssssssss1),
   try gen_server:call(Pedestrian, {are_you_at, NxtPositionPositionX, NxtPositionPositionY}) of
     true ->
       not_free;
     false ->
-      ask_cars_for_position(Rest,NxtPositionPositionX,NxtPositionPositionY)
+      ask_cars_for_position(Rest,NxtPositionPositionX,NxtPositionPositionY,self())
   catch
     exit:_Reason -> not_free
   end.
