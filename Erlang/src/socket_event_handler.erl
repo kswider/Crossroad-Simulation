@@ -124,7 +124,8 @@ handle_event({car,Pid,move,CarState}, State) ->
   X = integer_to_binary(CarState#car.position#position.x),
   Y = integer_to_binary(CarState#car.position#position.y),
   Pid_string = erlang:list_to_binary(erlang:pid_to_list(Pid)),
-  gen_tcp:send(State#state.socket,<<"{\"action\":\"car_move\",\"pid\":\"",Pid_string/binary,"\",\"position_x\":\"",X/binary,"\",\"position_y\":\"",Y/binary,"\"}">>),
+  Turn = erlang:list_to_binary(CarState#car.destination),
+  gen_tcp:send(State#state.socket,<<"{\"action\":\"car_move\",\"pid\":\"",Pid_string/binary,"\",\"position_x\":\"",X/binary,"\",\"position_y\":\"",Y/binary,"\",\"turn\":\"",Turn/binary,"\"}">>),
   {ok, State};
 
 handle_event({lights,started,_CarState}, State) ->
