@@ -24,8 +24,8 @@
 %%%===================================================================
 start_simulation(WorldParameters) ->
   start_lights(WorldParameters),
-  simulation_pedestrians_supervisor:generate_pedestrians(WorldParameters,3),
-  %simulation_traffic_supervisor:generate_cars(WorldParameters,4),
+  %simulation_pedestrians_supervisor:generate_pedestrians(WorldParameters,3),
+  simulation_traffic_supervisor:generate_cars(WorldParameters,1),
   done.
 stop_simulation() ->
   stop_lights(),

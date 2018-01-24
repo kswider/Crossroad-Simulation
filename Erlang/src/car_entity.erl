@@ -72,6 +72,7 @@ handle_info({timeout, _Ref, make_next_step}, State) ->
                 _ ->
                   simulation_event_stream:notify(car,State#car.pid,waits,State),
                   erlang:start_timer(State#car.world_parameters#world_parameters.car_speed, self(), make_next_step),
+                  simulation_event_stream:notify(asds,dasd,sdad),
                   {noreply, State}
               end;
             _ ->
@@ -80,11 +81,12 @@ handle_info({timeout, _Ref, make_next_step}, State) ->
               erlang:start_timer(State#car.world_parameters#world_parameters.car_speed, self(), make_next_step),
               {noreply, NState}
           end;
-      _ ->
-        simulation_event_stream:notify(car,State#car.pid,waits,State),
-        erlang:start_timer(State#car.world_parameters#world_parameters.car_speed, self(), make_next_step),
-        {noreply, State}
-    end
+        _ ->
+          simulation_event_stream:notify(car,State#car.pid,waits,State),
+          erlang:start_timer(State#car.world_parameters#world_parameters.car_speed, self(), make_next_step),
+          simulation_event_stream:notify(asds,dasd,sdad),
+          {noreply, State}
+      end
   end.
 
 terminate(_Reason, State) ->
@@ -154,8 +156,7 @@ am_i_entering_crossing(Pos,[Pos|_T]) -> true;
 am_i_entering_crossing(Pos,[_|T]) -> am_i_entering_crossing(Pos,T).
 
 is_light_green(State) ->
-  Position = State#car.position,
-  case gen_statem:call(light_entity,which_lights(Position)) of
+  case gen_statem:call(light_entity,which_lights(State)) of
     green -> true;
     _ -> false
   end.
@@ -171,4 +172,4 @@ is_free(State) ->
   Cars = supervisor:which_children(simulation_traffic_supervisor),
   Pedestrians = supervisor:which_children(simulation_pedestrians_supervisor),
   NxtPosition = (next_position(State))#car.position,
-  (common_defs:ask_cars_for_position(Cars,NxtPosition#position.x,NxtPosition#position.y) == free) and (common_defs:ask_pedestrians_for_position(Pedestrians,NxtPosition#position.x,NxtPosition#position.y) == free).
+  (common_defs:ask_cars_for_position(Cars,NxtPosition#position.x,NxtPosition#position.y,self()) == free) and (common_defs:ask_pedestrians_for_position(Pedestrians,NxtPosition#position.x,NxtPosition#position.y) == free).
