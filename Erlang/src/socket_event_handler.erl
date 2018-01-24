@@ -68,8 +68,8 @@ add_handler() ->
   {ok, State :: #state{}} |
   {ok, State :: #state{}, hibernate} |
   {error, Reason :: term()}).
-init([]) ->
-  {ok, #state{}}.
+init([Socket|_]) ->
+  {ok, #state{socket = Socket}}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -89,36 +89,42 @@ init([]) ->
 
 handle_event({pedestrian,Pid,spawned,PedestrianState}, State) ->
   %io:format("Pedestrian ~w spawned at <~w,~w> ~n",[Pid,PedestrianState#pedestrian.position#position.x,PedestrianState#pedestrian.position#position.y]),
-  X = PedestrianState#pedestrian.position#position.x,
-  Y = PedestrianState#pedestrian.position#position.y,
-  gen_tcp:send(State#state.socket,<<"{\"action\":\"pedestrian_spawned\",\"pid\":",Pid/binary,",\"position_x\":",X/binary,",\"position_y\":",Y/binary,"}">>),
+  X = integer_to_binary(PedestrianState#pedestrian.position#position.x),
+  Y = integer_to_binary(PedestrianState#pedestrian.position#position.y),
+  Pid_string = erlang:list_to_binary(erlang:pid_to_list(Pid)),
+  gen_tcp:send(State#state.socket,<<"{\"action\":\"pedestrian_spawned\",\"pid\":\"",Pid_string/binary,"\",\"position_x\":\"",X/binary,"\",\"position_y\":\"",Y/binary,"\"}">>),
   {ok, State};
 handle_event({pedestrian,Pid,disappeared,_PedestrianState}, State) ->
   %io:format("Pedestrian ~w disappeared ~n",[Pid]),
-  gen_tcp:send(State#state.socket,<<"{\"action\":\"pedestrian_disappeared\",\"pid\":",Pid/binary,"}">>),
+  Pid_string = erlang:list_to_binary(erlang:pid_to_list(Pid)),
+  gen_tcp:send(State#state.socket,<<"{\"action\":\"pedestrian_disappeared\",\"pid\":\"",Pid_string/binary,"\"}">>),
   {ok, State};
 handle_event({pedestrian,Pid,move,PedestrianState}, State) ->
   %io:format("Pedestrian ~w moves to <~w,~w> ~n",[Pid,PedestrianState#pedestrian.position#position.x,PedestrianState#pedestrian.position#position.y]),
-  X = PedestrianState#pedestrian.position#position.x,
-  Y = PedestrianState#pedestrian.position#position.y,
-  gen_tcp:send(State#state.socket,<<"{\"action\":\"pedestrian_move\",\"pid\":",Pid/binary,",\"position_x\":",X/binary,",\"position_y\":",Y/binary,"}">>),
+  X = integer_to_binary(PedestrianState#pedestrian.position#position.x),
+  Y = integer_to_binary(PedestrianState#pedestrian.position#position.y),
+  Pid_string = erlang:list_to_binary(erlang:pid_to_list(Pid)),
+  gen_tcp:send(State#state.socket,<<"{\"action\":\"pedestrian_move\",\"pid\":\"",Pid_string/binary,"\",\"position_x\":\"",X/binary,"\",\"position_y\":\"",Y/binary,"\"}">>),
   {ok, State};
 
 handle_event({car,Pid,spawned,CarState}, State) ->
   %io:format("Car spawned ~n"),
-  X = CarState#car.position#position.x,
-  Y = CarState#car.position#position.y,
-  gen_tcp:send(State#state.socket,<<"{\"action\":\"car_spawned\",\"pid\":",Pid/binary,",\"position_x\":",X/binary,",\"position_y\":",Y/binary,"}">>),
+  X = integer_to_binary(CarState#car.position#position.x),
+  Y = integer_to_binary(CarState#car.position#position.y),
+  Pid_string = erlang:list_to_binary(erlang:pid_to_list(Pid)),
+  gen_tcp:send(State#state.socket,<<"{\"action\":\"car_spawned\",\"pid\":\"",Pid_string/binary,"\",\"position_x\":\"",X/binary,"\",\"position_y\":\"",Y/binary,"\"}">>),
   {ok, State};
 handle_event({car,Pid,disappeared,_CarState}, State) ->
   %io:format("Car disappeard ~n"),
-  gen_tcp:send(State#state.socket,<<"{\"action\":\"car_disappeared\",\"pid\":",Pid/binary,"}">>),
+  Pid_string = erlang:list_to_binary(erlang:pid_to_list(Pid)),
+  gen_tcp:send(State#state.socket,<<"{\"action\":\"car_disappeared\",\"pid\":",Pid_string/binary,"}">>),
   {ok, State};
 handle_event({car,Pid,move,CarState}, State) ->
   %io:format("Pedestrian ~w moves to <~w,~w> ~n",[Pid,PedestrianState#pedestrian.position#position.x,PedestrianState#pedestrian.position#position.y]),
-  X = CarState#car.position#position.x,
-  Y = CarState#car.position#position.y,
-  gen_tcp:send(State#state.socket,<<"{\"action\":\"car_move\",\"pid\":",Pid/binary,",\"position_x\":",X,",\"position_y\":",Y,"}">>),
+  X = integer_to_binary(CarState#car.position#position.x),
+  Y = integer_to_binary(CarState#car.position#position.y),
+  Pid_string = erlang:list_to_binary(erlang:pid_to_list(Pid)),
+  gen_tcp:send(State#state.socket,<<"{\"action\":\"car_move\",\"pid\":\"",Pid_string/binary,"\",\"position_x\":\"",X/binary,"\",\"position_y\":\"",Y/binary,"\"}">>),
   {ok, State};
 
 handle_event({lights,started,_CarState}, State) ->
@@ -131,7 +137,8 @@ handle_event({lights,stopped,_CarState}, State) ->
 
 handle_event({lights,changes_to_red,_Data}, State) ->
   %io:format("Main lights are red. Sub lights are green ~n"),
-  gen_tcp:send(State#state.socket,<<"{\"action\":\"lights_changes_to_green\"}">>),
+  %io:format("PID = ~s",State#state.socket),
+  gen_tcp:send(State#state.socket,<<"{\"action\":\"lights_changes_to_red\"}">>),
   {ok, State};
 
 handle_event({lights,changes_to_yellow,_Data}, State) ->
@@ -139,8 +146,8 @@ handle_event({lights,changes_to_yellow,_Data}, State) ->
   {ok, State};
 
 handle_event({lights,changes_to_green,_Data}, State) ->
-  %io:format("Main lights are green. Sub lights are red ~n"),
-  gen_tcp:send(State#state.socket,<<"{\"action\":\"lights_changes_to_red\"}">>),
+  %io:format("PID = ~s",State#state.socket),
+  gen_tcp:send(State#state.socket,<<"{\"action\":\"lights_changes_to_green\"}">>),
   {ok, State};
 
 handle_event(_Event, State) ->

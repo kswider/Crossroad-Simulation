@@ -38,7 +38,6 @@ public class CrossroadController : MonoBehaviour {
 	// Use this for initialization
 	void Start () {
         StartServer();
-        but.onClick.AddListener(sendmsg);
 
     }
 
@@ -97,7 +96,7 @@ public class CrossroadController : MonoBehaviour {
                     go.name = pid;
                     float x = float.Parse(json["position_x"].ToString()) * 2;
                     float z = float.Parse(json["position_y"].ToString()) * 2;
-                    go.transform.position.Set(x, 0.375f, z);
+                    go.transform.position = new Vector3(x, 0.375f, z);
                     break;
                 case "pedestrian_disappeared":
                     pid = json["pid"].ToString();
@@ -109,7 +108,7 @@ public class CrossroadController : MonoBehaviour {
                     go = GameObject.Find(pid);
                     x = float.Parse(json["position_x"].ToString()) * 2;
                     z = float.Parse(json["position_y"].ToString()) * 2;
-                    go.transform.position.Set(x, 0.5f, z);
+                    StartCoroutine(MoveObject(go, new Vector3(x, 0.375f, z)));
                     break;
                 case "car_spawned":
                     pid = json["pid"].ToString();
@@ -117,7 +116,7 @@ public class CrossroadController : MonoBehaviour {
                     go.name = pid;
                     x = float.Parse(json["position_x"].ToString()) * 2;
                     z = float.Parse(json["position_y"].ToString()) * 2;
-                    go.transform.position.Set(x, 0, z);
+                    go.transform.position = new Vector3(x, 0.375f, z);
                     break;
                 case "car_disappeared":
                     pid = json["pid"].ToString();
@@ -129,14 +128,27 @@ public class CrossroadController : MonoBehaviour {
                     go = GameObject.Find(pid);
                     x = float.Parse(json["position_x"].ToString()) * 2;
                     z = float.Parse(json["position_y"].ToString()) * 2;
-                    go.transform.position.Set(x, 0, z);
-                    break;
-                case "lights_changes_to_red":
-                    ChangeLights("red");
+                    go.transform.position = new Vector3(x, 0.375f, z);
                     break;
                 case "lights_changes_to_green":
                     ChangeLights("green");
                     break;
+                case "lights_changes_to_red":
+                    ChangeLights("red");
+                    break;
+            }
+        }
+    }
+
+    private IEnumerator MoveObject(GameObject obj,Vector3 newPosition)
+    {
+        Vector3 distance = (newPosition - obj.transform.position)/10;
+        for (int i = 0; i < 10; i++)
+        {
+            if (obj != null)
+            {
+                obj.transform.position += distance;
+                yield return new WaitForSeconds(0.1f);
             }
         }
     }
