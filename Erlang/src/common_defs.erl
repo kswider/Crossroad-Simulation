@@ -77,10 +77,10 @@ get_waiting_points(car,_WorldParameters) ->
 
 get_turn_points(car,_WorldParameters) ->
   [
-    #position{x = 8, y = 8, look_x = 0, look_y = 1},
-    #position{x = 7, y = 7, look_x = 0, look_y = -1},
-    #position{x = 8, y = 7, look_x = 1, look_y = 0},
-    #position{x = 7, y = 8, look_x = -1, look_y = 0}
+    #position{x = 8, y = 8, look_x = 0, look_y = 0},
+    #position{x = 7, y = 7, look_x = 0, look_y = 0},
+    #position{x = 8, y = 7, look_x = 0, look_y = 0},
+    #position{x = 7, y = 8, look_x = 0, look_y = 0}
   ];
 
 get_turn_points(pedestrian,_WorldParameters) ->
@@ -114,24 +114,25 @@ ask_cars_for_position([], _NxtPositionPositionX, _NxtPositionPositionY, _MyPid) 
 ask_cars_for_position([ {_Id, MyPid, _Type, _Modules} | Rest ], NxtPositionPositionX, NxtPositionPositionY, MyPid) ->
   ask_cars_for_position(Rest,NxtPositionPositionX,NxtPositionPositionY,MyPid);
 ask_cars_for_position([ {_Id, Car, _Type, _Modules} | Rest ], NxtPositionPositionX, NxtPositionPositionY, MyPid) ->
-  simulation_event_stream:notify(sadas,sssssss,ssssssssss2),
-  try gen_server:call(Car, {are_you_at, NxtPositionPositionX, NxtPositionPositionY}) of
+  try gen_server:call(Car, {are_you_at, NxtPositionPositionX, NxtPositionPositionY},300) of
     true ->
       not_free;
     false ->
       ask_cars_for_position(Rest,NxtPositionPositionX,NxtPositionPositionY,MyPid)
   catch
-    exit:_Reason -> not_free
+    exit:_Reason ->
+      timeout
   end.
 
 ask_pedestrians_for_position([], _NxtPositionPositionX, _NxtPositionPositionY) -> free;
 ask_pedestrians_for_position([ {_Id, Pedestrian, _Type, _Modules} | Rest ], NxtPositionPositionX, NxtPositionPositionY) ->
-  simulation_event_stream:notify(sadas,sssssss,ssssssssss1),
+  gen_server:call(Pedestrian, {are_you_at, NxtPositionPositionX, NxtPositionPositionY}),
   try gen_server:call(Pedestrian, {are_you_at, NxtPositionPositionX, NxtPositionPositionY}) of
     true ->
       not_free;
     false ->
       ask_cars_for_position(Rest,NxtPositionPositionX,NxtPositionPositionY,self())
   catch
-    exit:_Reason -> not_free
+    exit:_Reason ->
+      timeout
   end.

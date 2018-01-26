@@ -155,7 +155,7 @@ which_lights(State) ->
 is_free(State) ->
   Cars = supervisor:which_children(simulation_traffic_supervisor),
   NxtPosition = (next_position(State))#pedestrian.position,
-  case common_defs:ask_cars_for_position(Cars,NxtPosition#position.x,NxtPosition#position.y) of
+  case common_defs:ask_cars_for_position(Cars,NxtPosition#position.x,NxtPosition#position.y,self()) of
     free -> true;
     _ -> false
   end.

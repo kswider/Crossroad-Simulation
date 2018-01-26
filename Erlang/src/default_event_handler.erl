@@ -100,35 +100,34 @@ handle_event({pedestrian,Pid,waits,PedestrianState}, State) ->
   io:format("Pedestrian ~w waits at <~w,~w> ~n",[Pid,PedestrianState#pedestrian.position#position.x,PedestrianState#pedestrian.position#position.y]),
   {ok, State};
 
-handle_event({car,spawned,_CarState}, State) ->
-  io:format("Car spawned ~n"),
+handle_event({car,Pid,spawned,_CarState}, State) ->
+  io:format("Car ~w spawned ~n",[Pid]),
   {ok, State};
-handle_event({car,disappeared,_CarState}, State) ->
-  io:format("Car disappeard ~n"),
+handle_event({car,Pid,disappeared,_CarState}, State) ->
+  io:format("Car ~w disappeard ~n",[Pid]),
   {ok, State};
-handle_event({car,Pid,move,PedestrianState}, State) ->
-  io:format("Car ~w moves to <~w,~w> ~n",[Pid,PedestrianState#pedestrian.position#position.x,PedestrianState#pedestrian.position#position.y]),
+handle_event({car,Pid,move,CarState}, State) ->
+  io:format("Car ~w moves to <~w,~w> ~n",[Pid,CarState#car.position#position.x,CarState#car.position#position.y]),
   {ok, State};
-handle_event({car,Pid,waits,PedestrianState}, State) ->
-  io:format("Car ~w waits at <~w,~w> ~n",[Pid,PedestrianState#pedestrian.position#position.x,PedestrianState#pedestrian.position#position.y]),
+handle_event({car,Pid,waits,CarState}, State) ->
+  io:format("Car ~w waits at <~w,~w> ~n",[Pid,CarState#car.position#position.x,CarState#car.position#position.y]),
+  {ok, State};
+handle_event({car,Pid,turns,CarState}, State) ->
+  io:format("Car ~w turns ~w ~n",[Pid,CarState#car.destination]),
   {ok, State};
 
 handle_event({lights,started,_CarState}, State) ->
   io:format("Lights started ~n"),
   {ok, State};
-
 handle_event({lights,stopped,_CarState}, State) ->
   io:format("Lights disappeared ~n"),
   {ok, State};
-
 handle_event({lights,changes_to_red,_Data}, State) ->
   io:format("Main lights are red. Sub lights are green ~n"),
   {ok, State};
-
 handle_event({lights,changes_to_yellow,_Data}, State) ->
   io:format("Main lights are yellow. Sub lights are yellow ~n"),
   {ok, State};
-
 handle_event({lights,changes_to_green,_Data}, State) ->
   io:format("Main lights are green. Sub lights are red ~n"),
   {ok, State};
