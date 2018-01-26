@@ -116,11 +116,11 @@ public class CrossroadController : MonoBehaviour {
                     go.name = pid;
                     x = float.Parse(json["position_x"].ToString()) * 2;
                     z = float.Parse(json["position_y"].ToString()) * 2;
-                    if (z == 16)
+                    if (z == 16f)
                         go.transform.Rotate(0, 270, 0);
-                    else if (x == 14)
+                    else if (x == 14f)
                         go.transform.Rotate(0, 180, 0);
-                    else if (z == 14)
+                    else if (z == 14f)
                         go.transform.Rotate(0, 90, 0);
                     go.transform.position = new Vector3(x, 0.375f, z);
                     break;

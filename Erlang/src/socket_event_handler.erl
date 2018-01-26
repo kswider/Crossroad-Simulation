@@ -117,14 +117,14 @@ handle_event({car,Pid,spawned,CarState}, State) ->
 handle_event({car,Pid,disappeared,_CarState}, State) ->
   %io:format("Car disappeard ~n"),
   Pid_string = erlang:list_to_binary(erlang:pid_to_list(Pid)),
-  gen_tcp:send(State#state.socket,<<"{\"action\":\"car_disappeared\",\"pid\":",Pid_string/binary,"}">>),
+  gen_tcp:send(State#state.socket,<<"{\"action\":\"car_disappeared\",\"pid\":\"",Pid_string/binary,"\"}">>),
   {ok, State};
 handle_event({car,Pid,move,CarState}, State) ->
   %io:format("Pedestrian ~w moves to <~w,~w> ~n",[Pid,PedestrianState#pedestrian.position#position.x,PedestrianState#pedestrian.position#position.y]),
   X = integer_to_binary(CarState#car.position#position.x),
   Y = integer_to_binary(CarState#car.position#position.y),
   Pid_string = erlang:list_to_binary(erlang:pid_to_list(Pid)),
-  Turn = erlang:list_to_binary(CarState#car.destination),
+  Turn = erlang:atom_to_binary(CarState#car.destination,utf8),
   gen_tcp:send(State#state.socket,<<"{\"action\":\"car_move\",\"pid\":\"",Pid_string/binary,"\",\"position_x\":\"",X/binary,"\",\"position_y\":\"",Y/binary,"\",\"turn\":\"",Turn/binary,"\"}">>),
   {ok, State};
 
