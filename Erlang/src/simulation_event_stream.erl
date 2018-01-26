@@ -20,14 +20,14 @@ start_link() ->
 
   {ok,Pid}.
 
-%%start_link() ->
-%%  {ok, Pid} = gen_event:start_link({local, ?MODULE}),
-%%  {ok,Socket} = gen_tcp:listen(12345, [{active,true}, binary,{packet,2}]),
-%%  {ok,AcceptSocket} = gen_tcp:accept(Socket),
-%%  gen_event:add_handler(?MODULE, socket_event_handler, [AcceptSocket]),
-%%  component_ready(?MODULE),
-%%
-%%  {ok, Pid}.
+%start_link() ->
+%  {ok, Pid} = gen_event:start_link({local, ?MODULE}),
+%  {ok,Socket} = gen_tcp:listen(12345, [{active,true}, binary,{packet,2}]),
+%  {ok,AcceptSocket} = gen_tcp:accept(Socket),
+%  gen_event:add_handler(?MODULE, socket_event_handler, [AcceptSocket]),
+%  component_ready(?MODULE),
+%
+%  {ok, Pid}.
 
 component_ready(Name) ->
   gen_event:notify(?MODULE, {Name, ready}).
