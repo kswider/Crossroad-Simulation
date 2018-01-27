@@ -109,18 +109,22 @@ make_turn(State) ->
     forward -> State;
     left ->
       Position = State#pedestrian.position,
+      Old_x = Position#position.look_x,
+      Old_y = Position#position.look_y,
       State#pedestrian{position =
         Position#position{
-          look_x = Position#position.look_y,
-          look_y = -Position#position.look_x
+          look_x = Old_y,
+          look_y = -Old_x
         }
       };
     right ->
       Position = State#pedestrian.position,
+      Old_x = Position#position.look_x,
+      Old_y = Position#position.look_y,
       State#pedestrian{position =
         Position#position{
-          look_x = -Position#position.look_y,
-          look_y = Position#position.look_x
+          look_x = -Old_y,
+          look_y = Old_x
         }
       };
     _ -> State

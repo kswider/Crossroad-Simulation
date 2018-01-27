@@ -116,7 +116,7 @@ ask_cars_for_position([ {_Id, MyPid, _Type, _Modules} | Rest ], NxtPositionPosit
 ask_cars_for_position([ {_Id, Car, _Type, _Modules} | Rest ], NxtPositionPositionX, NxtPositionPositionY, MyPid) ->
   try gen_server:call(Car, {are_you_at, NxtPositionPositionX, NxtPositionPositionY},300) of
     true ->
-      not_free;
+      Car;
     false ->
       ask_cars_for_position(Rest,NxtPositionPositionX,NxtPositionPositionY,MyPid)
   catch
