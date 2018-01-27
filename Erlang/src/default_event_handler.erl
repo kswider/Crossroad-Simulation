@@ -131,6 +131,12 @@ handle_event({lights,changes_to_yellow,_Data}, State) ->
 handle_event({lights,changes_to_green,_Data}, State) ->
   io:format("Main lights are green. Sub lights are red ~n"),
   {ok, State};
+handle_event({lights,remaining_green,_Data}, State) ->
+  io:format("Main lights are green. Sub lights are red ~n"),
+  {ok, State};
+handle_event({lights,remaining_red,_Data}, State) ->
+  io:format("Main lights are red. Sub lights are green ~n"),
+  {ok, State};
 
 handle_event(Msg,State) ->
   io:format("Not handled event happned!  <~w> ~n",[Msg]),
