@@ -59,7 +59,7 @@ Commands can be invoked in Erlang shell when simulation is started.
      - `light_entity` - gen_statem server responsible for changing lights periodicly and adapting them to the traffic on the road.
      - `UUIDProvider` - gen_server server responsible providing unique ID for new processes.
 
-##How it works##
+## How it works ##
 
 When simulation starts lights are being started automathicly. Lights are one big state machine with 3 states (red, yellow, green) which tries to change its state every N seconds (N can be different for each state).
 If there are some objects on both roads ligth color always changes. If crossing is empty main road lights are always green. If there is someone on the sub road and main road is free sub, lights will be green until sub road is empty or someone appears on the main road. 
@@ -71,6 +71,6 @@ Cars are spawned on the map in pre-defined points. Every N-seconds (N is car_spe
 
 Pedestrians are very similar to cars but there can be more then one pedestrian on single map pool. Therefore pedestrians are not aware of each other but they check if they can safely enter crossroad.
 
-##Project problems##
+## Project problems ##
 
 Due to very high load of messeges being send between cars, lights and pedestians simulation can easily broken (when cars gets timeout response it waits because it can't say if there is someone on the next pool). This could be solved by splitting `simulation_pedestrians_supervisor` and `simulation_traffic_supervisor` into more supervisors (e.g. simulation_north_road_pedestrians_superisor, simulation_south_road_pedestrians_supervisor, simulation_crossing_pedestrians_supervisor, simulation_waiting_to_spawn_pedestians_superisor etc.).
