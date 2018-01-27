@@ -71,7 +71,7 @@ get_waiting_points(car,sub_road,_WorldParameters) ->
 get_waiting_points(pedestrian,sub_road,_WorldParameters) ->
   [
     #position{x = 6, y = 4, look_x = 1, look_y = 0},
-    #position{x = 9, y = 0, look_x = -1, look_y = 0},
+    #position{x = 9, y = 4, look_x = -1, look_y = 0},
     #position{x = 9, y = 11, look_x = -1, look_y = 0},
     #position{x = 6, y = 11, look_x = 1, look_y = 0}
   ];

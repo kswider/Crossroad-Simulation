@@ -12,7 +12,7 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/1, start_simulation/0,stop_simulation/0,generate_cars/1,generate_pedestrians/1]).
+-export([start_link/1, start_simulation/0,stop_simulation/0,generate_cars/1,generate_pedestrians/1,start_socket_handler/0]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -40,6 +40,9 @@ generate_cars(Amount) ->
 generate_pedestrians(Amount) ->
   gen_server:call(?MODULE, {generate_pedestrians,Amount}).
 
+start_socket_handler() ->
+  gen_server:call(?MODULE, {start_socket_handler}).
+
 %%--------------------------------------------------------------------
 %% @doc
 %% Starts the server
@@ -56,6 +59,10 @@ start_link(WorldParameters) ->
 %%%=================================================================
 init(WorldParameters) ->
   {ok, {stopped,WorldParameters}}.
+
+handle_call(start_socket_handler, _From, State) ->
+  simulation_main_supervisor:add_socket_handler(),
+  {reply, started, State};
 
 handle_call(start_simulation, _From, {stopped,WorldParameters}) ->
   simulation_main_supervisor:start_simulation(WorldParameters),
