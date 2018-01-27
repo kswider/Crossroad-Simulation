@@ -140,12 +140,14 @@ public class CrossroadController : MonoBehaviour {
                 case "car_turn_left":
                     pid = json["pid"].ToString();
                     go = GameObject.Find(pid);
-                    go.transform.Rotate(Vector3.up,-45);
+                    StartCoroutine(RotateCar(go, "left"));
+                    //go.transform.Rotate(Vector3.up,-45);
                     break;
                 case "car_turn_right":
                     pid = json["pid"].ToString();
                     go = GameObject.Find(pid);
-                    go.transform.Rotate(Vector3.up,90);
+                    StartCoroutine(RotateCar(go, "right"));
+                    //go.transform.Rotate(Vector3.up,90);
                     break;
                 case "lights_changes_to_green":
                     ChangeLights("green");
@@ -154,6 +156,29 @@ public class CrossroadController : MonoBehaviour {
                     ChangeLights("red");
                     break;
             }
+        }
+    }
+
+    private IEnumerator RotateCar(GameObject go, string turn)
+    {
+        switch (turn)
+        {
+            case "left":
+                yield return new WaitForSeconds(1);
+                for (int i = 0; i < 10; i++)
+                {
+                    go.transform.Rotate(Vector3.up,-4.5f);
+                    yield return new WaitForSeconds(0.05f);
+                }
+                break;
+            case "right":
+                yield return new WaitForSeconds(1);
+                for (int i = 0; i < 10; i++)
+                {
+                    go.transform.Rotate(Vector3.up, 9);
+                    yield return new WaitForSeconds(0.1f);
+                }
+                break;
         }
     }
 

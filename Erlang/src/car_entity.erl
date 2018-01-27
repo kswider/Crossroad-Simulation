@@ -153,7 +153,8 @@ make_turn(State) ->
         look_y = my_round((math:sqrt(2) / 2) * Old_x + (math:sqrt(2) / 2) * Old_y)
       }
       },
-      simulation_event_stream:notify(car,self(),turns,NState),
+      simulation_event_stream:notify(car,self(),turn_left,NState),
+      %simulation_event_stream:notify(car,self(),turns,NState),
       NState;
     right ->
       Position = State#car.position,
@@ -165,7 +166,8 @@ make_turn(State) ->
         look_y = -Old_x
       }
       },
-      simulation_event_stream:notify(car,self(),turns,NState),
+      simulation_event_stream:notify(car,self(),turn_right,NState),
+      %simulation_event_stream:notify(car,self(),turns,NState),
       NState;
     _ -> State
   end.
@@ -209,7 +211,7 @@ is_free(State) ->
       (PedestriansResponse == free);
     CarPid ->
       if
-        ((State#car.destination == left) and State#position#position.look_x /= 0 and State#position#position.look_y /= 0) ->
+        ((State#car.destination == left) and (State#position.look_x /= 0) and (State#position.look_y /= 0)) ->
           try gen_server:call(CarPid,do_you_turn_left,300) of
             true ->
               true;
