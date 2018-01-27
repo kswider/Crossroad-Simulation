@@ -127,6 +127,14 @@ handle_event({car,Pid,move,CarState}, State) ->
   Turn = erlang:atom_to_binary(CarState#car.destination,utf8),
   gen_tcp:send(State#state.socket,<<"{\"action\":\"car_move\",\"pid\":\"",Pid_string/binary,"\",\"position_x\":\"",X/binary,"\",\"position_y\":\"",Y/binary,"\",\"turn\":\"",Turn/binary,"\"}">>),
   {ok, State};
+handle_event({car,Pid,turn_left,_CarState}, State) ->
+  Pid_string = erlang:list_to_binary(erlang:pid_to_list(Pid)),
+  gen_tcp:send(State#state.socket,<<"{\"action\":\"car_turn_left\",\"pid\":\"",Pid_string/binary,"\"}">>),
+  {ok, State};
+handle_event({car,Pid,turn_right,_CarState}, State) ->
+  Pid_string = erlang:list_to_binary(erlang:pid_to_list(Pid)),
+  gen_tcp:send(State#state.socket,<<"{\"action\":\"car_turn_right\",\"pid\":\"",Pid_string/binary,"\"}">>),
+  {ok, State};
 
 handle_event({lights,started,_CarState}, State) ->
   %io:format("Lights started ~n"),
