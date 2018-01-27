@@ -119,7 +119,8 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 am_i_at([],_State) -> false;
 am_i_at([{X,Y}|_PositionTail],State) when
-  (State#car.position#position.x == X) and (State#car.position#position.y == Y) ->
+  ((State#car.position#position.x == X) and (State#car.position#position.y == Y)) or
+    ((State#car.position#position.x - State#car.position#position.look_x == X) and (State#car.position#position.y - State#car.position#position.look_y == Y))->
   true;
 am_i_at([_|PositionTail],State) -> am_i_at(PositionTail,State).
 
