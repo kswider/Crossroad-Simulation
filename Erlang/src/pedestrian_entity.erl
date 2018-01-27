@@ -144,9 +144,12 @@ am_i_entering_zebra(Pos,[Pos|_T]) -> true;
 am_i_entering_zebra(Pos,[_|T]) -> am_i_entering_zebra(Pos,T).
 
 is_light_green(State) ->
-  case gen_statem:call(light_entity,which_lights(State)) of
+  try gen_statem:call(light_entity,which_lights(State)) of
     green -> true;
     _ -> false
+  catch
+    exit:_Reason ->
+      false
   end.
 
 which_lights(State) ->

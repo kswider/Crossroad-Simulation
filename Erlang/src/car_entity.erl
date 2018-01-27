@@ -53,7 +53,7 @@ handle_call({are_you_at,PositionList}, _From, State) ->
 handle_call({are_you_at,X,Y}, _From, State) ->
   {reply, am_i_at([{X,Y}],State), State};
 
-handle_call(do_you_turn_left, _From, State) ->
+handle_call({do_you_turn_left}, _From, State) ->
   if
     State#car.destination == left ->
       erlang:cancel_timer(State#car.timer_ref),
@@ -65,6 +65,7 @@ handle_call(do_you_turn_left, _From, State) ->
   end;
 
 handle_call(_, _From, State) ->
+  simulation_event_stream:notify(car,self(),unknown_call,State),
   {reply, false, State}.
 
 handle_cast(_Request, State) ->
@@ -155,7 +156,6 @@ make_turn(State) ->
       }
       },
       simulation_event_stream:notify(car,self(),turn_left,NState),
-      %simulation_event_stream:notify(car,self(),turns,NState),
       NState;
     right ->
       Position = State#car.position,
@@ -168,7 +168,6 @@ make_turn(State) ->
       }
       },
       simulation_event_stream:notify(car,self(),turn_right,NState),
-      %simulation_event_stream:notify(car,self(),turns,NState),
       NState;
     _ -> State
   end.
@@ -186,9 +185,12 @@ am_i_entering_crossing(Pos,[Pos|_T]) -> true;
 am_i_entering_crossing(Pos,[_|T]) -> am_i_entering_crossing(Pos,T).
 
 is_light_green(State) ->
-  case gen_statem:call(light_entity,which_lights(State)) of
+  try gen_statem:call(light_entity,which_lights(State)) of
     green -> true;
     _ -> false
+  catch
+    exit:_Reason ->
+      false
   end.
 
 which_lights(State) ->
@@ -211,9 +213,10 @@ is_free(State) ->
     free ->
       (PedestriansResponse == free);
     CarPid ->
+      simulation_event_stream:notify(checking,left1,side),
       if
-        ((State#car.destination == left) and (State#position.look_x /= 0) and (State#position.look_y /= 0)) ->
-          try gen_server:call(CarPid,do_you_turn_left,300) of
+        ((State#car.destination == left) and (State#car.position#position.look_x /= 0) and (State#car.position#position.look_y /= 0)) ->
+          try gen_server:call(CarPid,{do_you_turn_left},300) of
             true ->
               true;
             _ ->
