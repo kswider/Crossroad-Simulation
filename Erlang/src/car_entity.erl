@@ -130,6 +130,11 @@ next_position(State) ->
   simulation_event_stream:notify(car,State#car.pid,move,NState),
   case am_i_at_change_position(NState) of
     true ->
+      case NState#car.destination of
+        left -> simulation_event_stream:notify(car,self(),turn_left,NState);
+        right -> simulation_event_stream:notify(car,self(),turn_right,NState);
+        _ -> simulation_event_stream:notify(car,self(),turn_forward,NState)
+      end,
       NNState = make_turn(NState),
       NNState;
     _ ->
@@ -155,7 +160,6 @@ make_turn(State) ->
         look_y = my_round((math:sqrt(2) / 2) * Old_x + (math:sqrt(2) / 2) * Old_y)
       }
       },
-      simulation_event_stream:notify(car,self(),turn_left,NState),
       NState;
     right ->
       Position = State#car.position,
@@ -167,7 +171,6 @@ make_turn(State) ->
         look_y = -Old_x
       }
       },
-      simulation_event_stream:notify(car,self(),turn_right,NState),
       NState;
     _ -> State
   end.
@@ -211,9 +214,23 @@ is_free(State) ->
     timeout ->
       timeout;
     free ->
-      (PedestriansResponse == free);
+      if
+        ((State#car.destination == left) and (State#car.position#position.look_x /= 0) and (State#car.position#position.look_y /= 0)) ->
+          NxtState2 = make_turn(NxtState),
+          NxtPosition2 = NxtState2#car.position,
+          CarsResponse2 = common_defs:ask_cars_for_position(Cars,NxtPosition2#position.x,NxtPosition2#position.y,self()),
+          case CarsResponse2 of
+            free ->
+              (PedestriansResponse == free);
+            timeout ->
+              timeout;
+            _ ->
+              false
+          end;
+        true ->
+          (PedestriansResponse == free)
+      end;
     CarPid ->
-      simulation_event_stream:notify(checking,left1,side),
       if
         ((State#car.destination == left) and (State#car.position#position.look_x /= 0) and (State#car.position#position.look_y /= 0)) ->
           try gen_server:call(CarPid,{do_you_turn_left},300) of

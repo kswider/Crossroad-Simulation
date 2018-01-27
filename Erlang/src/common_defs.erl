@@ -51,7 +51,7 @@ get_start_points(car,_WorldParameters) ->
   [
     #position{x = 8, y = -1, look_x = 0, look_y = 1},
     #position{x = 16, y = 8, look_x = -1, look_y = 0},
-    #position{x = 7, y = 16, look_x = 0, look_y = -1}
+    #position{x = 7, y = 16, look_x = 0, look_y = -1},
     #position{x = -1, y = 7, look_x = 1, look_y = 0}
   ].
 

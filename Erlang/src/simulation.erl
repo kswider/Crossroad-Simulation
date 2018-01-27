@@ -22,7 +22,6 @@
 
 
 read_world_parameters_from_settings() ->
-  WorldSize = application:get_env(crossroad_simulation,world_size,10),
   MainLightsTime = application:get_env(crossroad_simulation, main_light_time, 10000),
   SubLightsTime = application:get_env(crossroad_simulation, sub_light_time, 10000),
   YellowLightsTime = application:get_env(crossroad_simulation, yellow_light_time, 3000),
