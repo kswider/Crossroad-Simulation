@@ -198,7 +198,8 @@ which_lights(State) ->
 is_free(State) ->
   Cars = supervisor:which_children(simulation_traffic_supervisor),
   Pedestrians = supervisor:which_children(simulation_pedestrians_supervisor),
-  NxtPosition = (estimate_next_position(State))#car.position,
+  NxtState = estimate_next_position(State),
+  NxtPosition = NxtState#car.position,
   CarsResponse = common_defs:ask_cars_for_position(Cars,NxtPosition#position.x,NxtPosition#position.y,self()),
   PedestriansResponse = common_defs:ask_pedestrians_for_position(Pedestrians,NxtPosition#position.x,NxtPosition#position.y),
   case CarsResponse of
@@ -208,7 +209,7 @@ is_free(State) ->
       (PedestriansResponse == free);
     CarPid ->
       if
-        State#car.destination == left ->
+        ((State#car.destination == left) and State#position#position.look_x /= 0 and State#position#position.look_y /= 0) ->
           try gen_server:call(CarPid,do_you_turn_left,300) of
             true ->
               true;
