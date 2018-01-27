@@ -41,7 +41,7 @@ generate_pedestrians(Amount) ->
   gen_server:call(?MODULE, {generate_pedestrians,Amount}).
 
 start_socket_handler() ->
-  gen_server:call(?MODULE, {start_socket_handler}).
+  gen_server:call(?MODULE, start_socket_handler).
 
 %%--------------------------------------------------------------------
 %% @doc
