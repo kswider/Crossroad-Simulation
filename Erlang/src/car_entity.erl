@@ -190,7 +190,7 @@ is_light_green(State) ->
 
 which_lights(State) ->
   Position = State#car.position,
-  case (Position#position.look_x == 0) of
+  case (Position#position.look_y /= 0) of
     true -> get_main_road_lights;
     _ -> get_sub_road_lights
   end.
@@ -209,7 +209,7 @@ is_free(State) ->
       (PedestriansResponse == free);
     CarPid ->
       if
-        ((State#car.destination == left) and State#position#position.look_x /= 0 and State#position#position.look_y /= 0) ->
+        ((State#car.destination == left) and (State#car.position#position.look_x /= 0) and (State#car.position#position.look_y /= 0)) ->
           try gen_server:call(CarPid,do_you_turn_left,300) of
             true ->
               true;

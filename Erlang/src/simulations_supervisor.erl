@@ -24,7 +24,6 @@
 %%%===================================================================
 start_simulation(WorldParameters) ->
   start_lights(WorldParameters),
-  simulation_traffic_supervisor:generate_cars(WorldParameters,1),
   done.
 stop_simulation() ->
   stop_lights(),
