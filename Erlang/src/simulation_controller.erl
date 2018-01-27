@@ -41,7 +41,7 @@ generate_pedestrians(Amount) ->
   gen_server:call(?MODULE, {generate_pedestrians,Amount}).
 
 start_socket_handler() ->
-  gen_server:call(?MODULE, start_socket_handler).
+  gen_server:cast(?MODULE, start_socket_handler).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -59,10 +59,6 @@ start_link(WorldParameters) ->
 %%%=================================================================
 init(WorldParameters) ->
   {ok, {stopped,WorldParameters}}.
-
-handle_call(start_socket_handler, _From, State) ->
-  simulation_main_supervisor:add_socket_handler(),
-  {reply, started, State};
 
 handle_call(start_simulation, _From, {stopped,WorldParameters}) ->
   simulation_main_supervisor:start_simulation(WorldParameters),
@@ -92,6 +88,9 @@ handle_call({generate_cars, Amount}, _From, {started,WorldParameters}) ->
 handle_call({generate_cars, _Amount}, _From, {stopped,WorldParameters}) ->
   {reply, cars_not_generated, {stopped,WorldParameters}}.
 
+handle_cast(start_socket_handler, State) ->
+  simulation_main_supervisor:add_socket_handler(),
+  {noreply, State};
 handle_cast(_Request, State) ->
   {noreply, State}.
 
