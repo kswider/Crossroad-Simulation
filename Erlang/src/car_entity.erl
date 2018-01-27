@@ -134,18 +134,22 @@ make_turn(State) ->
     forward -> State;
     left ->
       Position = State#car.position,
+      simulation_event_stream:notify(car,State#car.pid,turn_left,State),
       State#car{position =
       Position#position{
-        look_x = my_round((math:sqrt(2) / 2) * Position#position.look_x) - my_round((math:sqrt(2) / 2) * Position#position.look_y),
-        look_y = my_round((math:sqrt(2) / 2) * Position#position.look_x) + my_round((math:sqrt(2) / 2) * Position#position.look_y)
+        look_x = round(my_round((math:sqrt(2) / 2) * Position#position.look_x) - my_round((math:sqrt(2) / 2) * Position#position.look_y)),
+        look_y = round(my_round((math:sqrt(2) / 2) * Position#position.look_x) + my_round((math:sqrt(2) / 2) * Position#position.look_y))
       }
       };
     right ->
-      Position = State#car.position,
+      OldPosition = State#car.position,
+      simulation_event_stream:notify(car,State#car.pid,turn_right,State),
       State#car{position =
-      Position#position{
-        look_x = -Position#position.look_y,
-        look_y = Position#position.look_x
+        #{
+        x => OldPosition#position.x,
+        y => OldPosition#position.y,
+        look_x => OldPosition#position.look_y,
+        look_y => -OldPosition#position.look_x
       }
       };
     _ -> State
