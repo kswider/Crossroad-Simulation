@@ -19,6 +19,8 @@ public class CrossroadController : MonoBehaviour {
     [SerializeField]
     private Button connectButton;
     [SerializeField]
+    private Button exitButton;
+    [SerializeField]
     private Button generateButton;
     [SerializeField]
     private InputField pedestriansInputField;
@@ -56,8 +58,8 @@ public class CrossroadController : MonoBehaviour {
 
 	// Use this for initialization
 	void Start () {
-        ChangeLights("green");
         connectButton.onClick.AddListener(CreateConnection);
+        exitButton.onClick.AddListener(Application.Quit);
         //generateButton.onClick.AddListener(GeneratePedestriansAndCars);
 
     }
@@ -121,7 +123,6 @@ public class CrossroadController : MonoBehaviour {
 
             String action = json["action"].ToString();
             String pid;
-            //float x, z;
             GameObject go;
             switch (action)
             {
@@ -181,13 +182,11 @@ public class CrossroadController : MonoBehaviour {
                     pid = json["pid"].ToString();
                     go = GameObject.Find(pid);
                     StartCoroutine(RotateCar(go, "left"));
-                    //go.transform.Rotate(Vector3.up,-45);
                     break;
                 case "car_turn_right":
                     pid = json["pid"].ToString();
                     go = GameObject.Find(pid);
                     StartCoroutine(RotateCar(go, "right"));
-                    //go.transform.Rotate(Vector3.up,90);
                     break;
                 case "lights_changes_to_green":
                     ChangeLights("green");
@@ -413,11 +412,6 @@ public class CrossroadController : MonoBehaviour {
                 break;
         }
         yield return null;
-    }
-
-    IEnumerator ExecuteAfterTime(float seconds)
-    {
-        yield return new WaitForSeconds(seconds);
     }
 
     static void StartServer()
