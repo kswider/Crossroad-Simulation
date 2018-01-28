@@ -21,10 +21,7 @@ stop_children(SupervisorName) ->
   [ Pid ! stop_entity || {_, Pid, _, _} <- supervisor:which_children(SupervisorName) ].
 
 random_direction() ->
-  random:seed(erlang:phash2([node()]),
-    erlang:monotonic_time(),
-    erlang:unique_integer()),
-  case random:uniform(3) of
+  case rand:uniform(3) of
     1 -> forward;
     2 -> left;
     3 -> right
@@ -103,17 +100,11 @@ get_turn_points(pedestrian,_WorldParameters) ->
   ].
 
 get_random(pedestrian,WorldParameters) ->
-  random:seed(erlang:phash2([node()]),
-    erlang:monotonic_time(),
-    erlang:unique_integer()),
-  Pos = lists:nth(random:uniform(8),get_start_points(pedestrian,WorldParameters)),
+  Pos = lists:nth(rand:uniform(8),get_start_points(pedestrian,WorldParameters)),
   Direct = random_directions(4),
   {Pos,Direct};
 get_random(car,WorldParameters) ->
-  random:seed(erlang:phash2([node()]),
-    erlang:monotonic_time(),
-    erlang:unique_integer()),
-  Pos = lists:nth(random:uniform(4),get_start_points(car,WorldParameters)),
+  Pos = lists:nth(rand:uniform(4),get_start_points(car,WorldParameters)),
   Dest = random_destination(),
   {Pos,Dest}.
 
