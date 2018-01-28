@@ -132,6 +132,20 @@ ask_cars_for_position([ {_Id, Car, _Type, _Modules} | Rest ], NxtPositionPositio
       timeout
   end.
 
+ask_cars_for_position_2([], _NxtPositionPositionX, _NxtPositionPositionY, _MyPid) -> free;
+ask_cars_for_position_2([ {_Id, MyPid, _Type, _Modules} | Rest ], NxtPositionPositionX, NxtPositionPositionY, MyPid) ->
+  ask_cars_for_position(Rest,NxtPositionPositionX,NxtPositionPositionY,MyPid);
+ask_cars_for_position_2([ {_Id, Car, _Type, _Modules} | Rest ], NxtPositionPositionX, NxtPositionPositionY, MyPid) ->
+  try gen_server:call(Car, {will_you_be_at, NxtPositionPositionX, NxtPositionPositionY},300) of
+    true ->
+      Car;
+    false ->
+      ask_cars_for_position(Rest,NxtPositionPositionX,NxtPositionPositionY,MyPid)
+  catch
+    exit:_Reason ->
+      timeout
+  end.
+
 ask_pedestrians_for_position([], _NxtPositionPositionX, _NxtPositionPositionY) -> free;
 ask_pedestrians_for_position([ {_Id, Pedestrian, _Type, _Modules} | Rest ], NxtPositionPositionX, NxtPositionPositionY) ->
   gen_server:call(Pedestrian, {are_you_at, NxtPositionPositionX, NxtPositionPositionY}),

@@ -23,6 +23,8 @@
 %%% API functions
 %%%===================================================================
 start_simulation(WorldParameters) ->
+  simulation_traffic_supervisor:generate_cars(WorldParameters,WorldParameters#world_parameters.cars_start_amount),
+  simulation_pedestrians_supervisor:generate_pedestrians(WorldParameters,WorldParameters#world_parameters.pedestrian_start_amount),
   start_lights(WorldParameters),
   done.
 stop_simulation() ->
