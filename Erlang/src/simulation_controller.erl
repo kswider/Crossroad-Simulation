@@ -43,14 +43,6 @@ generate_pedestrians(Amount) ->
 start_socket_handler() ->
   gen_server:cast(?MODULE, start_socket_handler).
 
-%%--------------------------------------------------------------------
-%% @doc
-%% Starts the server
-%%
-%% @end
-%%--------------------------------------------------------------------
--spec(start_link(WorldParameters::any()) ->
-  {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
 start_link(WorldParameters) ->
   gen_server:start_link({local, ?MODULE}, ?MODULE, WorldParameters, []).
 

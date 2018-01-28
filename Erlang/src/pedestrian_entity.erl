@@ -12,6 +12,7 @@
 -behaviour(gen_server).
 
 -include("../include/records.hrl").
+
 %% API
 -export([start_link/1,make_step/1]).
 
@@ -32,6 +33,23 @@
 start_link(InitialState) ->
   gen_server:start_link(?MODULE, InitialState, []).
 
+make_step(State) ->
+  case am_i_entering_zebra(State) of
+    true ->
+      case is_light_green(State) and is_free(State) of
+        true ->
+          gen_server:cast(State#pedestrian.pid,move);
+        _ ->
+          gen_server:cast(State#pedestrian.pid,wait)
+      end;
+    _ ->
+      gen_server:cast(State#pedestrian.pid,move)
+  end.
+
+%%%===================================================================
+%%% gen_server callbacks
+%%%===================================================================
+
 init({WorldParameters,{Position,Directions}}) ->
   State = #pedestrian{
     pid = self(),
@@ -39,18 +57,18 @@ init({WorldParameters,{Position,Directions}}) ->
     directions = Directions,
     world_parameters = WorldParameters
   },
-  simulation_event_stream:notify(pedestrian,self(),spawned,State),
-  erlang:start_timer(State#pedestrian.world_parameters#world_parameters.pedestrian_speed, self(), make_next_step),
+  simulation_event_stream:notify(pedestrian,State#pedestrian.pid,spawned,State),
+  erlang:start_timer(State#pedestrian.world_parameters#world_parameters.pedestrian_speed, State#pedestrian.pid, make_next_step),
   {ok, State}.
 
 handle_cast(move,State) ->
   NState = next_position(State),
   simulation_event_stream:notify(pedestrian,State#pedestrian.pid,move,State),
-  erlang:start_timer(State#pedestrian.world_parameters#world_parameters.pedestrian_speed, self(), make_next_step),
+  erlang:start_timer(State#pedestrian.world_parameters#world_parameters.pedestrian_speed, State#pedestrian.pid, make_next_step),
   {noreply, NState};
 handle_cast(wait,State) ->
   simulation_event_stream:notify(pedestrian,State#pedestrian.pid,waits,State),
-  erlang:start_timer(State#pedestrian.world_parameters#world_parameters.pedestrian_speed, self(), make_next_step),
+  erlang:start_timer(State#pedestrian.world_parameters#world_parameters.pedestrian_speed, State#pedestrian.pid, make_next_step),
   {noreply, State};
 handle_cast(Request, State) ->
   simulation_event_stream:notify(err,err,Request),
@@ -156,7 +174,7 @@ which_lights(State) ->
 is_free(State) ->
   Cars = supervisor:which_children(simulation_traffic_supervisor),
   NxtPosition = (next_position(State))#pedestrian.position,
-  case common_defs:ask_cars_for_position(Cars,NxtPosition#position.x,NxtPosition#position.y,self()) of
+  case common_defs:ask_cars_for_position(Cars,NxtPosition#position.x,NxtPosition#position.y,State#pedestrian.pid) of
     free -> true;
     _ -> false
   end.
@@ -166,16 +184,3 @@ am_i_at([{X,Y}|_PositionTail],State) when
   (State#pedestrian.position#position.x == X) and (State#pedestrian.position#position.y == Y) ->
   true;
 am_i_at([_|PositionTail],State) -> am_i_at(PositionTail,State).
-
-make_step(State) ->
-  case am_i_entering_zebra(State) of
-    true ->
-      case is_light_green(State) and is_free(State) of
-        true ->
-          gen_server:cast(State#pedestrian.pid,move);
-        _ ->
-          gen_server:cast(State#pedestrian.pid,wait)
-      end;
-    _ ->
-      gen_server:cast(State#pedestrian.pid,move)
-  end.

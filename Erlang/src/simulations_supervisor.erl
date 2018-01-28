@@ -11,9 +11,11 @@
 
 -behaviour(supervisor).
 
+-include("../include/records.hrl").
+
 %% API
 -export([start_link/1,start_simulation/1,stop_simulation/0,generate_cars/2,generate_pedestrians/2]).
--include("../include/records.hrl").
+
 %% Supervisor callbacks
 -export([init/1]).
 

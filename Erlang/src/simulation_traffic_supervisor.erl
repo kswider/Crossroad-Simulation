@@ -50,5 +50,4 @@ init(_WorldParameters) ->
 
   SupFlags = {RestartStrategy, MaxRestarts, MaxSecondsBetweenRestarts},
 
-  %TODO: Check if SupFlags is ok (in rabbits restarts are loaded from world parameters, i dont know why :()
   {ok, {SupFlags, []}}.

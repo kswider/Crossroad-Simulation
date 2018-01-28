@@ -12,6 +12,7 @@
 -behaviour(gen_statem).
 
 -include("../include/records.hrl").
+
 %% API
 -export([start_link/1]).
 -export([red/3,green/3,yellow/3,not_started/3]).
@@ -27,6 +28,9 @@
 
 -define(SERVER, ?MODULE).
 
+%%%===================================================================
+%%% API
+%%%===================================================================
 start_link([WorldParameters]) ->
   gen_statem:start_link({local,?SERVER}, ?MODULE, WorldParameters, []).
 
@@ -34,6 +38,10 @@ init(WorldParameters) ->
   Data = #light{pid = self,main_road = horizontal, world_parameters = WorldParameters},
   {ok,not_started,Data}.
 
+
+%%%===================================================================
+%%% gen_statem callbacks
+%%%===================================================================
 not_started({call, From}, start, Data) ->
   simulation_event_stream:notify(lights,changes_to_green,Data),
   {next_state, green, Data, [{reply,From,started},{state_timeout,Data#light.world_parameters#world_parameters.yellow_light_time,change_time}]}.
@@ -82,6 +90,16 @@ handle_event(_, _, Data) ->
   {keep_state,Data}.
 
 
+terminate(_Reason, _State, _Data) ->
+  void.
+code_change(_Vsn, State, Data, _Extra) ->
+  {ok,State,Data}.
+callback_mode() -> state_functions.
+
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
+
 is_someone_on_main_road(Data) ->
   Cars = supervisor:which_children(simulation_traffic_supervisor),
   Pedestrians = supervisor:which_children(simulation_pedestrians_supervisor),
@@ -91,7 +109,6 @@ is_someone_on_sub_road(Data) ->
   Cars = supervisor:which_children(simulation_traffic_supervisor),
   Pedestrians = supervisor:which_children(simulation_pedestrians_supervisor),
   are_pedestrian_waiting(Pedestrians,common_defs:get_waiting_points(pedestrian,sub_road,Data#light.world_parameters)) or are_cars_waiting(Cars,common_defs:get_waiting_points(car,sub_road,Data#light.world_parameters)).
-
 
 are_pedestrian_waiting(_Pedestrian,[]) ->
   false;
@@ -108,9 +125,3 @@ are_cars_waiting(Cars,[{_,X,Y,_,_}|PosTail]) ->
     free -> are_cars_waiting(Cars,PosTail);
     _ -> true
   end.
-
-terminate(_Reason, _State, _Data) ->
-  void.
-code_change(_Vsn, State, Data, _Extra) ->
-  {ok,State,Data}.
-callback_mode() -> state_functions.
