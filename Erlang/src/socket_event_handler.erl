@@ -72,7 +72,8 @@ handle_event({car,Pid,spawned,CarState}, State) ->
   X = integer_to_binary(CarState#car.position#position.x),
   Y = integer_to_binary(CarState#car.position#position.y),
   Pid_string = erlang:list_to_binary(erlang:pid_to_list(Pid)),
-  gen_tcp:send(State#state.socket,<<"{\"action\":\"car_spawned\",\"pid\":\"",Pid_string/binary,"\",\"position_x\":\"",X/binary,"\",\"position_y\":\"",Y/binary,"\"}">>),
+  Turn = erlang:atom_to_binary(CarState#car.destination,utf8),
+  gen_tcp:send(State#state.socket,<<"{\"action\":\"car_spawned\",\"pid\":\"",Pid_string/binary,"\",\"position_x\":\"",X/binary,"\",\"position_y\":\"",Y/binary,"\",\"turn\":\"",Turn/binary,"\"}">>),
   {ok, State};
 handle_event({car,Pid,disappeared,_CarState}, State) ->
   %io:format("Car disappeard ~n"),
@@ -113,6 +114,7 @@ handle_event({lights,changes_to_red,_Data}, State) ->
 
 handle_event({lights,changes_to_yellow,_Data}, State) ->
   %io:format("Main lights are yellow. Sub lights are yellow ~n"),
+  gen_tcp:send(State#state.socket,<<"{\"action\":\"lights_changes_to_yellow\"}">>),
   {ok, State};
 
 handle_event({lights,changes_to_green,_Data}, State) ->

@@ -132,7 +132,7 @@ public class CrossroadController : MonoBehaviour {
                     go.name = pid;
                     float x = float.Parse(json["position_x"].ToString()) * 2;
                     float z = float.Parse(json["position_y"].ToString()) * 2;
-                    go.transform.position = new Vector3(x, 0.375f, z);
+                    go.transform.position = new Vector3(x, 0.5f, z);
                     break;
                 case "pedestrian_disappeared":
                     pid = json["pid"].ToString();
@@ -145,7 +145,7 @@ public class CrossroadController : MonoBehaviour {
                     x = float.Parse(json["position_x"].ToString()) * 2;
                     z = float.Parse(json["position_y"].ToString()) * 2;
                     float speed = int.Parse(json["speed"].ToString())/1000;
-                    StartCoroutine(MovePedestrian(go, new Vector3(x, 0.375f, z),speed));
+                    StartCoroutine(MovePedestrian(go, new Vector3(x, 0.5f, z),speed));
                     break;
                 case "car_spawned":
                     pid = json["pid"].ToString();
@@ -160,6 +160,9 @@ public class CrossroadController : MonoBehaviour {
                     else if (z == 14f)
                         go.transform.Rotate(0, 90, 0);
                     go.transform.position = new Vector3(x, 0.375f, z);
+
+                    String turn = json["turn"].ToString();
+                    StartCoroutine(StartIndicator(go,turn));
                     break;
                 case "car_disappeared":
                     pid = json["pid"].ToString();
@@ -169,11 +172,10 @@ public class CrossroadController : MonoBehaviour {
                 case "car_move":
                     pid = json["pid"].ToString();
                     go = GameObject.Find(pid);
-                    String turn = json["turn"].ToString();
                     speed = int.Parse(json["speed"].ToString()) / 1000;
                     x = float.Parse(json["position_x"].ToString()) * 2;
                     z = float.Parse(json["position_y"].ToString()) * 2;
-                    StartCoroutine(MoveCar(go, new Vector3(x, 0.5f, z),speed));
+                    StartCoroutine(MoveCar(go, new Vector3(x, 0.375f, z),speed));
                     break;
                 case "car_turn_left":
                     pid = json["pid"].ToString();
@@ -190,10 +192,47 @@ public class CrossroadController : MonoBehaviour {
                 case "lights_changes_to_green":
                     ChangeLights("green");
                     break;
+                case "lights_changes_to_yellow":
+                    Debug.Log("LOOOOL");
+                    ChangeLights("yellow");
+                    break;
                 case "lights_changes_to_red":
                     ChangeLights("red");
                     break;
             }
+        }
+    }
+
+    private IEnumerator StartIndicator(GameObject go,string which)
+    {
+        switch (which)
+        {
+            case "left":
+                while(go != null)
+                {
+                    go.transform.Find("Body/LeftIndicators/FrontIndicator").GetComponent<MeshRenderer>().material = yellow_light;
+                    go.transform.Find("Body/LeftIndicators/SideIndicator").GetComponent<MeshRenderer>().material = yellow_light;
+                    go.transform.Find("Body/LeftIndicators/BackIndicator").GetComponent<MeshRenderer>().material = yellow_light;
+                    yield return new WaitForSeconds(0.33f);
+                    go.transform.Find("Body/LeftIndicators/FrontIndicator").GetComponent<MeshRenderer>().material = no_light;
+                    go.transform.Find("Body/LeftIndicators/SideIndicator").GetComponent<MeshRenderer>().material = no_light;
+                    go.transform.Find("Body/LeftIndicators/BackIndicator").GetComponent<MeshRenderer>().material = no_light;
+                    yield return new WaitForSeconds(0.33f);
+                }
+                break;
+            case "right":
+                while (go != null)
+                {
+                    go.transform.Find("Body/RightIndicators/FrontIndicator").GetComponent<MeshRenderer>().material = yellow_light;
+                    go.transform.Find("Body/RightIndicators/SideIndicator").GetComponent<MeshRenderer>().material = yellow_light;
+                    go.transform.Find("Body/RightIndicators/BackIndicator").GetComponent<MeshRenderer>().material = yellow_light;
+                    yield return new WaitForSeconds(0.5f);
+                    go.transform.Find("Body/RightIndicators/FrontIndicator").GetComponent<MeshRenderer>().material = no_light;
+                    go.transform.Find("Body/RightIndicators/SideIndicator").GetComponent<MeshRenderer>().material = no_light;
+                    go.transform.Find("Body/RightIndicators/BackIndicator").GetComponent<MeshRenderer>().material = no_light;
+                    yield return new WaitForSeconds(0.5f);
+                }
+                break;
         }
     }
 
@@ -251,11 +290,12 @@ public class CrossroadController : MonoBehaviour {
         switch (color)
         {
             case "red":
+                /*
                 goArray = GameObject.FindGameObjectsWithTag("MainRoadLight");
                 foreach (GameObject light in goArray)
                 {
                     StartCoroutine(ChangeOneLight(light, "red"));
-                }
+                }*/
                 goArray = GameObject.FindGameObjectsWithTag("SubRoadLight");
                 foreach (GameObject light in goArray)
                 {
@@ -278,11 +318,12 @@ public class CrossroadController : MonoBehaviour {
                 {
                     StartCoroutine(ChangeOneLight(light, "green"));
                 }
+                /*
                 goArray = GameObject.FindGameObjectsWithTag("SubRoadLight");
                 foreach (GameObject light in goArray)
                 {
                     StartCoroutine(ChangeOneLight(light, "red"));
-                }
+                }*/
                 goArray = GameObject.FindGameObjectsWithTag("PedestrianMainRoadLight");
                 foreach (GameObject light in goArray)
                 {
@@ -294,6 +335,32 @@ public class CrossroadController : MonoBehaviour {
                     StartCoroutine(ChangeOnePedestrianLight(light, "green"));
                 }
                 break;
+            case "yellow":
+                goArray = GameObject.FindGameObjectsWithTag("MainRoadLight");
+                foreach (GameObject light in goArray)
+                {
+                    StartCoroutine(ChangeOneLight(light, "yellow"));
+                }
+                
+                goArray = GameObject.FindGameObjectsWithTag("SubRoadLight");
+                foreach (GameObject light in goArray)
+                {
+                    StartCoroutine(ChangeOneLight(light, "yellow"));
+                }
+                /*
+                goArray = GameObject.FindGameObjectsWithTag("PedestrianMainRoadLight");
+                foreach (GameObject light in goArray)
+                {
+                    StartCoroutine(ChangeOnePedestrianLight(light, "red"));
+                }
+                goArray = GameObject.FindGameObjectsWithTag("PedestrianSubRoadLight");
+                foreach (GameObject light in goArray)
+                {
+                    StartCoroutine(ChangeOnePedestrianLight(light, "green"));
+                }
+                */
+                break;
+                
         }
     }
 
@@ -302,9 +369,6 @@ public class CrossroadController : MonoBehaviour {
         switch (color)
         {
             case "red":
-                light.transform.Find("Box/GreenLight").GetComponent<MeshRenderer>().material = no_light;
-                light.transform.Find("Box/YellowLight").GetComponent<MeshRenderer>().material = yellow_light;
-                yield return new WaitForSeconds(2);
                 light.transform.Find("Box/YellowLight").GetComponent<MeshRenderer>().material = no_light;
                 light.transform.Find("Box/RedLight").GetComponent<MeshRenderer>().material = red_light;
                 break;
@@ -314,6 +378,17 @@ public class CrossroadController : MonoBehaviour {
                 light.transform.Find("Box/GreenLight").GetComponent<MeshRenderer>().material = green_light;
                 light.transform.Find("Box/YellowLight").GetComponent<MeshRenderer>().material = no_light;
                 light.transform.Find("Box/RedLight").GetComponent<MeshRenderer>().material = no_light;
+                break;
+            case "yellow":
+                if(light.transform.Find("Box/GreenLight").GetComponent<MeshRenderer>().sharedMaterial == green_light)
+                {
+                    light.transform.Find("Box/GreenLight").GetComponent<MeshRenderer>().material = no_light;
+                    light.transform.Find("Box/YellowLight").GetComponent<MeshRenderer>().material = yellow_light;
+                    yield return new WaitForSeconds(2);
+                    light.transform.Find("Box/YellowLight").GetComponent<MeshRenderer>().material = no_light;
+                    light.transform.Find("Box/RedLight").GetComponent<MeshRenderer>().material = red_light;
+                }
+
                 break;
         }
     }
@@ -356,7 +431,6 @@ public class CrossroadController : MonoBehaviour {
                 while (reader != null)
                 {
                     Message msg = Message.ReadFromStream(reader);
-                    Debug.Log("reading from socket");
                     AddItemToQueue(msg);
                 }
                 lock (networkThread)
