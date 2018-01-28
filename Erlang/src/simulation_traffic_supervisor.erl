@@ -35,7 +35,7 @@ start_link(WorldParameters) ->
   supervisor:start_link({local, ?SERVER}, ?MODULE, WorldParameters).
 
 spawn_car(WorldParameters,UUID,CarParams) ->
-  timer:sleep(200),
+  timer:sleep(rand:uniform(400)),
   Cars = supervisor:which_children(simulation_traffic_supervisor),
   {Pos,_Dest} = CarParams,
   case common_defs:ask_cars_for_position(Cars,Pos#position.x,Pos#position.y,self()) of
@@ -46,7 +46,7 @@ spawn_car(WorldParameters,UUID,CarParams) ->
         [ car_entity ]},
       supervisor:start_child(?MODULE, Car);
     _ ->
-      timer:sleep(800),
+      timer:sleep(1000),
       spawn_car(WorldParameters,UUID,CarParams)
   end.
 
