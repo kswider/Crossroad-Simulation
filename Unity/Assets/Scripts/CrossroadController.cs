@@ -9,13 +9,29 @@ using UnityEngine;
 using UnityEngine.UI;
 
 public class CrossroadController : MonoBehaviour {
-
+    //Prefabs
     [SerializeField]
     private GameObject pedestrian;
     [SerializeField]
     private GameObject car;
+
+    //UI
     [SerializeField]
-    private Button but;
+    private Button connectButton;
+    [SerializeField]
+    private Button generateButton;
+    [SerializeField]
+    private InputField pedestriansInputField;
+    [SerializeField]
+    private InputField carsInputField;
+    [SerializeField]
+    private GameObject pedestrians;
+    [SerializeField]
+    private GameObject cars;
+    [SerializeField]
+    private GameObject generateButtonGO;
+
+    //Materials
     [SerializeField]
     private Material red_light;
     [SerializeField]
@@ -24,11 +40,14 @@ public class CrossroadController : MonoBehaviour {
     private Material green_light;
     [SerializeField]
     private Material no_light;
+
+    //Connection
     static TcpClient client = null;
     static BinaryReader reader = null;
     static BinaryWriter writer = null;
     static Thread networkThread = null;
     private static Queue<Message> messageQueue = new Queue<Message>();
+
 
     void Awake()
     {
@@ -37,20 +56,36 @@ public class CrossroadController : MonoBehaviour {
 
 	// Use this for initialization
 	void Start () {
-        StartServer();
+        ChangeLights("green");
+        connectButton.onClick.AddListener(CreateConnection);
+        generateButton.onClick.AddListener(GeneratePedestriansAndCars);
 
-    }
-
-    private void sendmsg()
-    {
-        Send(new Message(new Byte[] { 1, 2 }));
     }
 
     // Update is called once per frame
-    void Update () {
+    void Update()
+    {
         processMessage();
-
     }
+
+    private void CreateConnection()
+    {
+        StartServer();
+        GameObject.Find("ConnectButton").SetActive(false);
+        pedestrians.SetActive(true);
+        cars.SetActive(true);
+        generateButtonGO.SetActive(true);
+    }
+
+    private void GeneratePedestriansAndCars()
+    {
+        int pedestriansToCreate = int.Parse(pedestriansInputField.text);
+        int carsToCreate = int.Parse(carsInputField.text);
+        //String generate = "lol";
+        byte[] lol = new byte[] { 70, 80 };
+        Send(new Message(lol));
+    }
+
 
     static void AddItemToQueue(Message item)
     {
