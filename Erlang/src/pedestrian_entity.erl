@@ -39,18 +39,18 @@ init({WorldParameters,{Position,Directions}}) ->
     directions = Directions,
     world_parameters = WorldParameters
   },
-  simulation_event_stream:notify(pedestrian,self(),spawned,State),
-  erlang:start_timer(State#pedestrian.world_parameters#world_parameters.pedestrian_speed, self(), make_next_step),
+  simulation_event_stream:notify(pedestrian,State#pedestrian.pid,spawned,State),
+  erlang:start_timer(State#pedestrian.world_parameters#world_parameters.pedestrian_speed, State#pedestrian.pid, make_next_step),
   {ok, State}.
 
 handle_cast(move,State) ->
   NState = next_position(State),
   simulation_event_stream:notify(pedestrian,State#pedestrian.pid,move,State),
-  erlang:start_timer(State#pedestrian.world_parameters#world_parameters.pedestrian_speed, self(), make_next_step),
+  erlang:start_timer(State#pedestrian.world_parameters#world_parameters.pedestrian_speed, State#pedestrian.pid, make_next_step),
   {noreply, NState};
 handle_cast(wait,State) ->
   simulation_event_stream:notify(pedestrian,State#pedestrian.pid,waits,State),
-  erlang:start_timer(State#pedestrian.world_parameters#world_parameters.pedestrian_speed, self(), make_next_step),
+  erlang:start_timer(State#pedestrian.world_parameters#world_parameters.pedestrian_speed, State#pedestrian.pid, make_next_step),
   {noreply, State};
 handle_cast(Request, State) ->
   simulation_event_stream:notify(err,err,Request),
@@ -156,7 +156,7 @@ which_lights(State) ->
 is_free(State) ->
   Cars = supervisor:which_children(simulation_traffic_supervisor),
   NxtPosition = (next_position(State))#pedestrian.position,
-  case common_defs:ask_cars_for_position(Cars,NxtPosition#position.x,NxtPosition#position.y,self()) of
+  case common_defs:ask_cars_for_position(Cars,NxtPosition#position.x,NxtPosition#position.y,State#pedestrian.pid) of
     free -> true;
     _ -> false
   end.

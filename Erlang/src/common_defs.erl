@@ -140,7 +140,7 @@ ask_cars_for_position_2([ {_Id, Car, _Type, _Modules} | Rest ], NxtPositionPosit
     true ->
       Car;
     false ->
-      ask_cars_for_position(Rest,NxtPositionPositionX,NxtPositionPositionY,MyPid)
+      ask_cars_for_position_2(Rest,NxtPositionPositionX,NxtPositionPositionY,MyPid)
   catch
     exit:_Reason ->
       timeout

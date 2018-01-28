@@ -36,16 +36,17 @@ start_link(InitialState) ->
 %%%===================================================================
 
 init({WorldParameters,{Position,Destination}}) ->
-  TimerRef = erlang:start_timer(WorldParameters#world_parameters.car_speed, self(), make_next_step),
+  Pid = self(),
+  TimerRef = erlang:start_timer(WorldParameters#world_parameters.car_speed, Pid, make_next_step),
   State = #car{
-    pid = self(),
+    pid = Pid,
     position = Position,
     destination = Destination,
     world_parameters = WorldParameters,
     timer_ref = TimerRef,
     making_move = false
   },
-  simulation_event_stream:notify(car,self(),spawned,State),
+  simulation_event_stream:notify(car,Pid,spawned,State),
   {ok, State}.
 
 handle_call({are_you_at,PositionList}, _From, State) ->
@@ -62,29 +63,30 @@ handle_call({do_you_turn_left}, _From, State) ->
     State#car.destination == left ->
       erlang:cancel_timer(State#car.timer_ref),
       NState = next_position(State),
-      TimerRef = erlang:start_timer(State#car.world_parameters#world_parameters.car_speed, self(), make_next_step),
+      TimerRef = erlang:start_timer(State#car.world_parameters#world_parameters.car_speed, State#car.pid, make_next_step),
       {reply, true, NState#car{timer_ref = TimerRef}};
     true ->
       {reply, false, State}
   end;
 
-handle_call(_, _From, State) ->
-  simulation_event_stream:notify(car,self(),unknown_call,State),
+handle_call(Request, From, State) ->
+  simulation_event_stream:notify(car,State#car.pid,{unknown_call,Request,From},State),
   {reply, false, State}.
 
 handle_cast(move,State) ->
   NState = next_position(State),
-  TimerRef = erlang:start_timer(State#car.world_parameters#world_parameters.car_speed, self(), make_next_step),
+  TimerRef = erlang:start_timer(State#car.world_parameters#world_parameters.car_speed, State#car.pid, make_next_step),
   {noreply, NState#car{timer_ref = TimerRef}};
 handle_cast(wait,State) ->
   simulation_event_stream:notify(car,State#car.pid,waits,State),
-  TimerRef = erlang:start_timer(State#car.world_parameters#world_parameters.car_speed, self(), make_next_step),
+  TimerRef = erlang:start_timer(State#car.world_parameters#world_parameters.car_speed, State#car.pid, make_next_step),
   {noreply, State#car{timer_ref = TimerRef}};
 handle_cast(timeout,State) ->
   simulation_event_stream:notify(car,State#car.pid,got_timeout,State),
-  TimerRef = erlang:start_timer(round(rand:uniform()*100), self(), make_next_step),
+  TimerRef = erlang:start_timer(round(rand:uniform()*100), State#car.pid, make_next_step),
   {noreply, State#car{timer_ref = TimerRef}};
-handle_cast(_Request, State) ->
+handle_cast(Request, State) ->
+  simulation_event_stream:notify(car,State#car.pid,{unknown_cast,Request},State),
   {noreply, State}.
 
 handle_info({timeout, _Ref, make_next_step}, State) ->
@@ -94,9 +96,9 @@ handle_info({timeout, _Ref, make_next_step}, State) ->
       spawn(?MODULE,make_step,[State]),
       {noreply,State}
   end;
-handle_info(Msg,Sate) ->
-  simulation_event_stream:notify(car,unknown_info,Msg),
-  {noreply,Sate}.
+handle_info(Request,State) ->
+  simulation_event_stream:notify(car,State#car.pid,{unknown_call,Request},State),
+  {noreply,State}.
 
 terminate(_Reason, State) ->
   simulation_event_stream:notify(car,State#car.pid,disappeared,State),
@@ -121,9 +123,9 @@ next_position(State) ->
   case am_i_at_change_position(NState) of
     true ->
       case NState#car.destination of
-        left -> simulation_event_stream:notify(car,self(),turn_left,NState);
-        right -> simulation_event_stream:notify(car,self(),turn_right,NState);
-        _ -> simulation_event_stream:notify(car,self(),turn_forward,NState)
+        left -> simulation_event_stream:notify(car,State#car.pid,turn_left,NState);
+        right -> simulation_event_stream:notify(car,State#car.pid,turn_right,NState);
+        _ -> simulation_event_stream:notify(car,State#car.pid,turn_forward,NState)
       end,
       NNState = make_turn(NState),
       NNState;
@@ -198,7 +200,7 @@ is_free(State) ->
   Pedestrians = supervisor:which_children(simulation_pedestrians_supervisor),
   NxtState = estimate_next_position(State),
   NxtPosition = NxtState#car.position,
-  CarsResponse = common_defs:ask_cars_for_position(Cars,NxtPosition#position.x,NxtPosition#position.y,self()),
+  CarsResponse = common_defs:ask_cars_for_position(Cars,NxtPosition#position.x,NxtPosition#position.y,State#car.pid),
   PedestriansResponse = common_defs:ask_pedestrians_for_position(Pedestrians,NxtPosition#position.x,NxtPosition#position.y),
   case CarsResponse of
     timeout ->
@@ -206,9 +208,11 @@ is_free(State) ->
     free ->
       if
         ((State#car.destination == left) and (State#car.position#position.look_x /= 0) and (State#car.position#position.look_y /= 0)) ->
-          CarsResponse3 = common_defs:ask_cars_for_position_2(Cars,NxtPosition#position.x,NxtPosition#position.y,self()),
+          CarsResponse3 = common_defs:ask_cars_for_position_2(Cars,NxtPosition#position.x,NxtPosition#position.y,State#car.pid),
+          simulation_event_stream:notify(asked,future,CarsResponse3),
           case CarsResponse3 of
             free -> true;
+            timeout -> timeout;
             _ -> false
           end;
         true ->
