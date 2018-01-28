@@ -59,9 +59,21 @@ public class CrossroadController : MonoBehaviour {
 	// Use this for initialization
 	void Start () {
         connectButton.onClick.AddListener(CreateConnection);
-        exitButton.onClick.AddListener(Application.Quit);
+        exitButton.onClick.AddListener(CloseApp);
         //generateButton.onClick.AddListener(GeneratePedestriansAndCars);
 
+    }
+
+    private void CloseApp()
+    {
+        if(networkThread != null)
+        {
+            networkThread.Abort();
+            client.Close();
+            reader.Close();
+            writer.Close();
+        }
+        Application.Quit();
     }
 
     // Update is called once per frame
