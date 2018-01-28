@@ -61,7 +61,7 @@ handle_call({will_you_be_at,X,Y}, _From, State) ->
 
 handle_call({do_you_turn_left}, _From, State) ->
   if
-    State#car.destination == left ->
+    (State#car.destination == left) and (State#car.position#position.look_x /= 0) and (State#car.position#position.look_y /= 0) ->
       erlang:cancel_timer(State#car.timer_ref),
       NState = next_position(State),
       TimerRef = erlang:start_timer(State#car.world_parameters#world_parameters.car_speed, State#car.pid, make_next_step),
