@@ -112,7 +112,10 @@ handle_event({car,Pid,move,CarState}, State) ->
 handle_event({car,Pid,waits,CarState}, State) ->
   io:format("Car ~w waits at <~w,~w> ~n",[Pid,CarState#car.position#position.x,CarState#car.position#position.y]),
   {ok, State};
-handle_event({car,Pid,turns,CarState}, State) ->
+handle_event({car,Pid,turn_left,CarState}, State) ->
+  io:format("Car ~w turns ~w ~n",[Pid,CarState#car.destination]),
+  {ok, State};
+handle_event({car,Pid,turn_right,CarState}, State) ->
   io:format("Car ~w turns ~w ~n",[Pid,CarState#car.destination]),
   {ok, State};
 

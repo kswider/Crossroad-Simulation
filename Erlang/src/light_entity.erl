@@ -58,9 +58,9 @@ yellow(state_timeout,change_to_green_time,Data) ->
   simulation_event_stream:notify(lights,changes_to_green,Data),
   {next_state, green, Data, [{state_timeout,Data#light.world_parameters#world_parameters.main_light_time,change_time}]};
 yellow({call,From}, get_main_road_lights, Data) ->
-  {keep_state,Data,[{reply,From,yellow}]};
+  {keep_state,Data,[{reply,From,red}]};
 yellow({call,From}, get_sub_road_lights, Data) ->
-  {keep_state,Data,[{reply,From,yellow}]}.
+  {keep_state,Data,[{reply,From,red}]}.
 
 red(state_timeout,change_time,Data) ->
   case is_someone_on_sub_road(Data) and not is_someone_on_main_road(Data) of

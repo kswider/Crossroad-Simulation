@@ -12,7 +12,7 @@
 -include("../include/records.hrl").
 %% API
 -export([get_start_points/2,get_turn_points/2,get_waiting_points/2,get_random/2,get_waiting_points/3]).
--export([stop_children/1,ask_pedestrians_for_position/3,ask_cars_for_position/4,should_dissapear/2]).
+-export([stop_children/1,ask_pedestrians_for_position/3,ask_cars_for_position/4,should_dissapear/2,ask_cars_for_position_2/4]).
 
 stop_children(SupervisorName) ->
   [ Pid ! stop_entity || {_, Pid, _, _} <- supervisor:which_children(SupervisorName) ].
@@ -123,6 +123,20 @@ ask_cars_for_position([ {_Id, MyPid, _Type, _Modules} | Rest ], NxtPositionPosit
   ask_cars_for_position(Rest,NxtPositionPositionX,NxtPositionPositionY,MyPid);
 ask_cars_for_position([ {_Id, Car, _Type, _Modules} | Rest ], NxtPositionPositionX, NxtPositionPositionY, MyPid) ->
   try gen_server:call(Car, {are_you_at, NxtPositionPositionX, NxtPositionPositionY},300) of
+    true ->
+      Car;
+    false ->
+      ask_cars_for_position(Rest,NxtPositionPositionX,NxtPositionPositionY,MyPid)
+  catch
+    exit:_Reason ->
+      timeout
+  end.
+
+ask_cars_for_position_2([], _NxtPositionPositionX, _NxtPositionPositionY, _MyPid) -> free;
+ask_cars_for_position_2([ {_Id, MyPid, _Type, _Modules} | Rest ], NxtPositionPositionX, NxtPositionPositionY, MyPid) ->
+  ask_cars_for_position(Rest,NxtPositionPositionX,NxtPositionPositionY,MyPid);
+ask_cars_for_position_2([ {_Id, Car, _Type, _Modules} | Rest ], NxtPositionPositionX, NxtPositionPositionY, MyPid) ->
+  try gen_server:call(Car, {will_you_be_at, NxtPositionPositionX, NxtPositionPositionY},300) of
     true ->
       Car;
     false ->

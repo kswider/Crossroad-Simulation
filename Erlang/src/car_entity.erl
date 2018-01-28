@@ -13,7 +13,7 @@
 
 -include("../include/records.hrl").
 %% API
--export([start_link/1]).
+-export([start_link/1,make_step/1]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -42,7 +42,8 @@ init({WorldParameters,{Position,Destination}}) ->
     position = Position,
     destination = Destination,
     world_parameters = WorldParameters,
-    timer_ref = TimerRef
+    timer_ref = TimerRef,
+    making_move = false
   },
   simulation_event_stream:notify(car,self(),spawned,State),
   {ok, State}.
@@ -53,7 +54,10 @@ handle_call({are_you_at,PositionList}, _From, State) ->
 handle_call({are_you_at,X,Y}, _From, State) ->
   {reply, am_i_at([{X,Y}],State), State};
 
-handle_call(do_you_turn_left, _From, State) ->
+handle_call({will_you_be_at,X,Y}, _From, State) ->
+  {reply, am_i_at([{X,Y}],estimate_next_position(State)), State};
+
+handle_call({do_you_turn_left}, _From, State) ->
   if
     State#car.destination == left ->
       erlang:cancel_timer(State#car.timer_ref),
@@ -65,8 +69,21 @@ handle_call(do_you_turn_left, _From, State) ->
   end;
 
 handle_call(_, _From, State) ->
+  simulation_event_stream:notify(car,self(),unknown_call,State),
   {reply, false, State}.
 
+handle_cast(move,State) ->
+  NState = next_position(State),
+  TimerRef = erlang:start_timer(State#car.world_parameters#world_parameters.car_speed, self(), make_next_step),
+  {noreply, NState#car{timer_ref = TimerRef}};
+handle_cast(wait,State) ->
+  simulation_event_stream:notify(car,State#car.pid,waits,State),
+  TimerRef = erlang:start_timer(State#car.world_parameters#world_parameters.car_speed, self(), make_next_step),
+  {noreply, State#car{timer_ref = TimerRef}};
+handle_cast(timeout,State) ->
+  simulation_event_stream:notify(car,State#car.pid,got_timeout,State),
+  TimerRef = erlang:start_timer(round(rand:uniform()*100), self(), make_next_step),
+  {noreply, State#car{timer_ref = TimerRef}};
 handle_cast(_Request, State) ->
   {noreply, State}.
 
@@ -74,34 +91,8 @@ handle_info({timeout, _Ref, make_next_step}, State) ->
   case common_defs:should_dissapear(State#car.world_parameters,State#car.position) of
     true -> supervisor:terminate_child(simulation_traffic_supervisor,State#car.pid);
     _ ->
-      case is_free(State) of
-        true ->
-          case am_i_entering_crossing(State) of
-            true ->
-              case is_light_green(State) of
-                true ->
-                  NState = next_position(State),
-                  TimerRef = erlang:start_timer(State#car.world_parameters#world_parameters.car_speed, self(), make_next_step),
-                  {noreply, NState#car{timer_ref = TimerRef}};
-                _ ->
-                  simulation_event_stream:notify(car,State#car.pid,waits,State),
-                  TimerRef = erlang:start_timer(State#car.world_parameters#world_parameters.car_speed, self(), make_next_step),
-                  {noreply, State#car{timer_ref = TimerRef}}
-              end;
-            _ ->
-              NState = next_position(State),
-              TimerRef = erlang:start_timer(State#car.world_parameters#world_parameters.car_speed, self(), make_next_step),
-              {noreply, NState#car{timer_ref = TimerRef}}
-          end;
-        timeout ->
-          simulation_event_stream:notify(car,State#car.pid,got_timeout,State),
-          TimerRef = erlang:start_timer(round(rand:uniform()*100), self(), make_next_step),
-          {noreply, State#car{timer_ref = TimerRef}};
-        _ ->
-          simulation_event_stream:notify(car,State#car.pid,waits,State),
-          TimerRef = erlang:start_timer(State#car.world_parameters#world_parameters.car_speed, self(), make_next_step),
-          {noreply, State#car{timer_ref = TimerRef}}
-      end
+      spawn(?MODULE,make_step,[State]),
+      {noreply,State}
   end;
 handle_info(Msg,Sate) ->
   simulation_event_stream:notify(car,unknown_info,Msg),
@@ -129,6 +120,11 @@ next_position(State) ->
   simulation_event_stream:notify(car,State#car.pid,move,NState),
   case am_i_at_change_position(NState) of
     true ->
+      case NState#car.destination of
+        left -> simulation_event_stream:notify(car,self(),turn_left,NState);
+        right -> simulation_event_stream:notify(car,self(),turn_right,NState);
+        _ -> simulation_event_stream:notify(car,self(),turn_forward,NState)
+      end,
       NNState = make_turn(NState),
       NNState;
     _ ->
@@ -154,8 +150,6 @@ make_turn(State) ->
         look_y = my_round((math:sqrt(2) / 2) * Old_x + (math:sqrt(2) / 2) * Old_y)
       }
       },
-      simulation_event_stream:notify(car,self(),turn_left,NState),
-      %simulation_event_stream:notify(car,self(),turns,NState),
       NState;
     right ->
       Position = State#car.position,
@@ -167,8 +161,6 @@ make_turn(State) ->
         look_y = -Old_x
       }
       },
-      simulation_event_stream:notify(car,self(),turn_right,NState),
-      %simulation_event_stream:notify(car,self(),turns,NState),
       NState;
     _ -> State
   end.
@@ -186,9 +178,12 @@ am_i_entering_crossing(Pos,[Pos|_T]) -> true;
 am_i_entering_crossing(Pos,[_|T]) -> am_i_entering_crossing(Pos,T).
 
 is_light_green(State) ->
-  case gen_statem:call(light_entity,which_lights(State)) of
+  try gen_statem:call(light_entity,which_lights(State)) of
     green -> true;
     _ -> false
+  catch
+    exit:_Reason ->
+      false
   end.
 
 which_lights(State) ->
@@ -209,11 +204,20 @@ is_free(State) ->
     timeout ->
       timeout;
     free ->
-      (PedestriansResponse == free);
+      if
+        ((State#car.destination == left) and (State#car.position#position.look_x /= 0) and (State#car.position#position.look_y /= 0)) ->
+          CarsResponse3 = common_defs:ask_cars_for_position_2(Cars,NxtPosition#position.x,NxtPosition#position.y,self()),
+          case CarsResponse3 of
+            free -> true;
+            _ -> false
+          end;
+        true ->
+          (PedestriansResponse == free)
+      end;
     CarPid ->
       if
-        ((State#car.destination == left) and (State#position.look_x /= 0) and (State#position.look_y /= 0)) ->
-          try gen_server:call(CarPid,do_you_turn_left,300) of
+        ((State#car.destination == left) and (State#car.position#position.look_x /= 0) and (State#car.position#position.look_y /= 0)) ->
+          try gen_server:call(CarPid,{do_you_turn_left},300) of
             true ->
               true;
             _ ->
@@ -230,3 +234,24 @@ is_free(State) ->
 my_round(X) when X < 0 -> -1;
 my_round(X) when X == 0 -> 0;
 my_round(X) when X > 0 -> 1.
+
+
+make_step(State) ->
+  case is_free(State) of
+    true ->
+      case am_i_entering_crossing(State) of
+        true ->
+          case is_light_green(State) of
+            true ->
+              gen_server:cast(State#car.pid,move);
+            _ ->
+              gen_server:cast(State#car.pid,wait)
+          end;
+        _ ->
+          gen_server:cast(State#car.pid,move)
+      end;
+    timeout ->
+      gen_server:cast(State#car.pid,timeout);
+    _ ->
+      gen_server:cast(State#car.pid,wait)
+  end.
