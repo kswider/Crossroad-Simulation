@@ -35,8 +35,8 @@ Avaliable parameters are:
 - `yellow_light_time` - time of yellow light in milisecons
 - `cars_start_amount` - amount of cars spawned while stating the simulation
 - `pedestrian_start_amount` - amount of pedestrians spawned while stating the simulation
-- `pedestrian_speed` - pedestrians refresh duration in milisecons (if you are using socket_event_handler and our Unity app this parameter can't be lower then 1000)
-- `car_speed` - cars refresh duration in milisecons (if you are using socket_event_handler and our Unity app this parameter can't be lower then 1000)
+- `pedestrian_speed` - pedestrians refresh duration in milisecons 
+- `car_speed` - cars refresh duration in milisecons
 
 ### Useful commands ###
 
@@ -52,25 +52,25 @@ Commands can be invoked in Erlang shell when simulation is started.
     - `simulation_controller` - Server which is responsible for handling simulation state and sending commands to the simulation subsystems from the outside.
     - `simulation_event_stream` - Events notifier, which is responsible for notifying about all state changes during the simulation.
       - `default_event_handler` - gen_event server responsible for printing all events into console. Always stated with the application
-      - `socket_event_handler` - gen_event server responsible for wrining all events into pre-defined socket. Started by appropriate command.
+      - `socket_event_handler` - gen_event server responsible for writing all events into pre-defined socket. Started by appropriate command.
     - `simulations_supervisor` - Supervisor for all necessary simulation entities.
       - `pedestrians_supervisor` - Supervisor responsible for all pedestrians on the map.
         - `pedestrian_entity` - gen_server server responsible for single pedestrian on the map.
       - `traffic_supervisor` - Supervisor responsible for all cars on the map.
         - `car_entity` - gen_server server responsible for single car on the map.
-      - `light_entity` - gen_statem server responsible for changing lights periodicly and adapting them to the traffic on the road.
+      - `light_entity` - gen_state server responsible for changing lights periodicly and adapting them to the traffic on the road.
       - `UUIDProvider` - gen_server server responsible providing unique ID for new processes.
 
 ## How it works ##
 
-When simulation starts lights are being started automathicly. Lights are one big state machine with 3 states (red, yellow, green) which tries to change its state every N seconds (N can be different for each state).
-If there are some objects on both roads ligth color always changes. If crossing is empty main road lights are always green. If there is someone on the sub road and main road is free sub, lights will be green until sub road is empty or someone appears on the main road. 
+When simulation starts lights are being started automatically. Lights are one big state machine with 3 states (red, yellow, green) which tries to change its state every N seconds (N can be different for each state).
+If there are some objects on both roads ligth color always changes. If crossing is empty main road lights are always green. If there is someone on the sub road and main road is free, sub lights will be green until sub road is empty or someone appears on the main road. 
 
 Cars are spawned on the map in pre-defined points. Every N-seconds car is trying to make a step. In order to do this, car:
 1. Asks other cars if they are not on the pool where they want to go
 2. If car enters crossing it checks light color and if there are no pedestrians left on the zebra.
 3. If car is on the pool where it should make a turn (those points are also pre-defined) it makes a turn or tries to synchronise itself with other cars on the crossing (which is importanat especially while turning left).
 
-To avoid dead locks all those steps are performed in a process separate from car process. After all require sterps are performed process sends cast message to car process and kills itself.
+To avoid dead locks all those steps are performed in a process separate from car process. After all required steps are performed process sends cast message to car process and kills itself.
 
-Pedestrians are very similar to cars but there can be more then one pedestrian on single map pool. Therefore pedestrians are not aware of each other but they check if they can safely enter crossroad.
+Pedestrians are very similar to cars but there can be more then one pedestrian on single map square. Therefore pedestrians are not aware of each other but they check if they can safely enter crossroad.
