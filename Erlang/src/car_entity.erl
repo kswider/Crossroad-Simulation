@@ -12,6 +12,7 @@
 -behaviour(gen_server).
 
 -include("../include/records.hrl").
+
 %% API
 -export([start_link/1,make_step/1]).
 

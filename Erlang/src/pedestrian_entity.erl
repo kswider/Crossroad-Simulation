@@ -12,6 +12,7 @@
 -behaviour(gen_server).
 
 -include("../include/records.hrl").
+
 %% API
 -export([start_link/1,make_step/1]).
 
@@ -31,6 +32,23 @@
 
 start_link(InitialState) ->
   gen_server:start_link(?MODULE, InitialState, []).
+
+make_step(State) ->
+  case am_i_entering_zebra(State) of
+    true ->
+      case is_light_green(State) and is_free(State) of
+        true ->
+          gen_server:cast(State#pedestrian.pid,move);
+        _ ->
+          gen_server:cast(State#pedestrian.pid,wait)
+      end;
+    _ ->
+      gen_server:cast(State#pedestrian.pid,move)
+  end.
+
+%%%===================================================================
+%%% gen_server callbacks
+%%%===================================================================
 
 init({WorldParameters,{Position,Directions}}) ->
   State = #pedestrian{
@@ -166,16 +184,3 @@ am_i_at([{X,Y}|_PositionTail],State) when
   (State#pedestrian.position#position.x == X) and (State#pedestrian.position#position.y == Y) ->
   true;
 am_i_at([_|PositionTail],State) -> am_i_at(PositionTail,State).
-
-make_step(State) ->
-  case am_i_entering_zebra(State) of
-    true ->
-      case is_light_green(State) and is_free(State) of
-        true ->
-          gen_server:cast(State#pedestrian.pid,move);
-        _ ->
-          gen_server:cast(State#pedestrian.pid,wait)
-      end;
-    _ ->
-      gen_server:cast(State#pedestrian.pid,move)
-  end.

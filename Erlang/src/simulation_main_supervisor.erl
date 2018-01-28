@@ -10,6 +10,7 @@
 -author("motek").
 
 -behaviour(supervisor).
+
 -include("../include/records.hrl").
 
 %% API
@@ -18,49 +19,30 @@
 %% Supervisor callbacks
 -export([init/1]).
 
--export([start_simulation/1,stop_simulation/0,generate_cars/2,generate_pedestrians/2,add_socket_handler/0]).
+-export([start_simulation/1,stop_simulation/0,generate_cars/2,
+  generate_pedestrians/2,add_socket_handler/0]).
+
 -define(SERVER, ?MODULE).
 
 %%%===================================================================
 %%% API functions
 %%%===================================================================
 start_simulation(WorldParameters) -> simulations_supervisor:start_simulation(WorldParameters).
+
 stop_simulation() -> simulations_supervisor:stop_simulation().
+
 generate_pedestrians(WorldParameters,Amount) -> simulations_supervisor:generate_pedestrians(WorldParameters,Amount).
+
 generate_cars(WorldParameters,Amount) -> simulations_supervisor:generate_cars(WorldParameters,Amount).
+
 add_socket_handler() -> simulation_event_stream:add_socket_handler().
-%%--------------------------------------------------------------------
-%% @doc
-%% Starts the supervisor
-%%
-%% @end
-%%--------------------------------------------------------------------
--spec(start_link(WorldParameters::any()) ->
-  {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
+
 start_link(WorldParameters) ->
   supervisor:start_link({local, ?SERVER}, ?MODULE, WorldParameters).
 
 %%%===================================================================
 %%% Supervisor callbacks
 %%%===================================================================
-
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Whenever a supervisor is started using supervisor:start_link/[2,3],
-%% this function is called by the new process to find out about
-%% restart strategy, maximum restart frequency and child
-%% specifications.
-%%
-%% @end
-%%--------------------------------------------------------------------
--spec(init(Args :: term()) ->
-  {ok, {SupFlags :: {RestartStrategy :: supervisor:strategy(),
-    MaxR :: non_neg_integer(), MaxT :: non_neg_integer()},
-    [ChildSpec :: supervisor:child_spec()]
-  }} |
-  ignore |
-  {error, Reason :: term()}).
 
 init(WorldParameters) ->
   Args = [ WorldParameters ],

@@ -9,15 +9,14 @@
 -module(simulation_event_stream).
 -author("motek").
 
-%% API
--export([start_link/0,component_ready/1,notify/3,notify/4,attach_handler/1,remove_handler/1,add_socket_handler/0]).
+
+-export([start_link/0,component_ready/1,notify/3,
+  notify/4,attach_handler/1,remove_handler/1,
+  add_socket_handler/0]).
 
 start_link() ->
   {ok, Pid} = gen_event:start_link({local, ?MODULE}),
   gen_event:add_handler(?MODULE, default_event_handler, []),
-  %{ok,Socket} = gen_tcp:listen(12345, [{active,true}, binary,{packet,2}]),
-  %{ok,AcceptSocket} = gen_tcp:accept(Socket),
-  %gen_event:add_handler(?MODULE, socket_event_handler, [AcceptSocket]),
   component_ready(?MODULE),
   {ok,Pid}.
 
