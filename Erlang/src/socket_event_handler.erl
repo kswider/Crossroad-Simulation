@@ -63,7 +63,8 @@ handle_event({pedestrian,Pid,move,PedestrianState}, State) ->
   X = integer_to_binary(PedestrianState#pedestrian.position#position.x),
   Y = integer_to_binary(PedestrianState#pedestrian.position#position.y),
   Pid_string = erlang:list_to_binary(erlang:pid_to_list(Pid)),
-  gen_tcp:send(State#state.socket,<<"{\"action\":\"pedestrian_move\",\"pid\":\"",Pid_string/binary,"\",\"position_x\":\"",X/binary,"\",\"position_y\":\"",Y/binary,"\"}">>),
+  Speed = integer_to_binary(PedestrianState#pedestrian.world_parameters#world_parameters.pedestrian_speed),
+  gen_tcp:send(State#state.socket,<<"{\"action\":\"pedestrian_move\",\"pid\":\"",Pid_string/binary,"\",\"position_x\":\"",X/binary,"\",\"position_y\":\"",Y/binary,"\",\"speed\":\"",Speed/binary,"\"}">>),
   {ok, State};
 
 handle_event({car,Pid,spawned,CarState}, State) ->
@@ -82,9 +83,10 @@ handle_event({car,Pid,move,CarState}, State) ->
   %io:format("Pedestrian ~w moves to <~w,~w> ~n",[Pid,PedestrianState#pedestrian.position#position.x,PedestrianState#pedestrian.position#position.y]),
   X = integer_to_binary(CarState#car.position#position.x),
   Y = integer_to_binary(CarState#car.position#position.y),
+  Speed = integer_to_binary(CarState#car.world_parameters#world_parameters.car_speed), %
   Pid_string = erlang:list_to_binary(erlang:pid_to_list(Pid)),
   Turn = erlang:atom_to_binary(CarState#car.destination,utf8),
-  gen_tcp:send(State#state.socket,<<"{\"action\":\"car_move\",\"pid\":\"",Pid_string/binary,"\",\"position_x\":\"",X/binary,"\",\"position_y\":\"",Y/binary,"\",\"turn\":\"",Turn/binary,"\"}">>),
+  gen_tcp:send(State#state.socket,<<"{\"action\":\"car_move\",\"pid\":\"",Pid_string/binary,"\",\"position_x\":\"",X/binary,"\",\"position_y\":\"",Y/binary,"\",\"turn\":\"",Turn/binary,"\",\"speed\":\"",Speed/binary,"\"}">>),
   {ok, State};
 handle_event({car,Pid,turn_left,_CarState}, State) ->
   Pid_string = erlang:list_to_binary(erlang:pid_to_list(Pid)),
