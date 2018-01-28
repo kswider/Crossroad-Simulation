@@ -58,7 +58,7 @@ public class CrossroadController : MonoBehaviour {
 	void Start () {
         ChangeLights("green");
         connectButton.onClick.AddListener(CreateConnection);
-        generateButton.onClick.AddListener(GeneratePedestriansAndCars);
+        //generateButton.onClick.AddListener(GeneratePedestriansAndCars);
 
     }
 
@@ -72,11 +72,12 @@ public class CrossroadController : MonoBehaviour {
     {
         StartServer();
         GameObject.Find("ConnectButton").SetActive(false);
-        pedestrians.SetActive(true);
-        cars.SetActive(true);
-        generateButtonGO.SetActive(true);
+        //pedestrians.SetActive(true);
+        //cars.SetActive(true);
+        //generateButtonGO.SetActive(true);
     }
 
+    // TODO
     private void GeneratePedestriansAndCars()
     {
         int pedestriansToCreate = int.Parse(pedestriansInputField.text);
@@ -143,7 +144,8 @@ public class CrossroadController : MonoBehaviour {
                     go = GameObject.Find(pid);
                     x = float.Parse(json["position_x"].ToString()) * 2;
                     z = float.Parse(json["position_y"].ToString()) * 2;
-                    StartCoroutine(MovePedestrian(go, new Vector3(x, 0.375f, z)));
+                    float speed = int.Parse(json["speed"].ToString())/1000;
+                    StartCoroutine(MovePedestrian(go, new Vector3(x, 0.375f, z),speed));
                     break;
                 case "car_spawned":
                     pid = json["pid"].ToString();
@@ -168,9 +170,10 @@ public class CrossroadController : MonoBehaviour {
                     pid = json["pid"].ToString();
                     go = GameObject.Find(pid);
                     String turn = json["turn"].ToString();
+                    speed = int.Parse(json["speed"].ToString()) / 1000;
                     x = float.Parse(json["position_x"].ToString()) * 2;
                     z = float.Parse(json["position_y"].ToString()) * 2;
-                    StartCoroutine(MoveCar(go, new Vector3(x, 0.5f, z)));
+                    StartCoroutine(MoveCar(go, new Vector3(x, 0.5f, z),speed));
                     break;
                 case "car_turn_left":
                     pid = json["pid"].ToString();
@@ -217,10 +220,10 @@ public class CrossroadController : MonoBehaviour {
         }
     }
 
-    private IEnumerator MovePedestrian(GameObject obj,Vector3 newPosition)
+    private IEnumerator MovePedestrian(GameObject obj,Vector3 newPosition,float speed)
     {
-        Vector3 distance = (newPosition - obj.transform.position)/10;
-        for (int i = 0; i < 10; i++)
+        Vector3 distance = (newPosition - obj.transform.position) / (10*speed);
+        for (int i = 0; i < 10 * speed; i++)
         {
             if (obj != null)
             {
@@ -229,10 +232,10 @@ public class CrossroadController : MonoBehaviour {
             }
         }
     }
-    private IEnumerator MoveCar(GameObject obj, Vector3 newPosition)
+    private IEnumerator MoveCar(GameObject obj, Vector3 newPosition,float speed)
     {
-        Vector3 distance = (newPosition - obj.transform.position) / 10;
-        for (int i = 0; i < 10; i++)
+        Vector3 distance = (newPosition - obj.transform.position) / (10 * speed);
+        for (int i = 0; i < 10*speed; i++)
         {
             if (obj != null)
             {
