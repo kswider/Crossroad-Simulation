@@ -12,7 +12,7 @@
 -include("../include/records.hrl").
 %% API
 -export([get_start_points/2,get_turn_points/2,get_waiting_points/2,get_random/2,get_waiting_points/3]).
--export([stop_children/1,ask_pedestrians_for_position/3,ask_cars_for_position/4,should_dissapear/2]).
+-export([stop_children/1,ask_pedestrians_for_position/3,ask_cars_for_position/4,should_dissapear/2,ask_cars_for_position_2/4]).
 
 stop_children(SupervisorName) ->
   [ Pid ! stop_entity || {_, Pid, _, _} <- supervisor:which_children(SupervisorName) ].

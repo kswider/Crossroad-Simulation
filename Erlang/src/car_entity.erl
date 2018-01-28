@@ -206,20 +206,10 @@ is_free(State) ->
     free ->
       if
         ((State#car.destination == left) and (State#car.position#position.look_x /= 0) and (State#car.position#position.look_y /= 0)) ->
-          NxtState2 = make_turn(NxtState),
-          NxtPosition2 = NxtState2#car.position,
-          CarsResponse2 = common_defs:ask_cars_for_position(Cars,NxtPosition2#position.x,NxtPosition2#position.y,self()),
-          case CarsResponse2 of
-            free ->
-              CarsResponse3 = common_defs:ask_cars_for_position_2(Cars,NxtPosition#position.x,NxtPosition#position.y,self()),
-              case CarsResponse3 of
-                free -> true;
-                _ -> false
-              end;
-            timeout ->
-              timeout;
-            _ ->
-              false
+          CarsResponse3 = common_defs:ask_cars_for_position_2(Cars,NxtPosition#position.x,NxtPosition#position.y,self()),
+          case CarsResponse3 of
+            free -> true;
+            _ -> false
           end;
         true ->
           (PedestriansResponse == free)
