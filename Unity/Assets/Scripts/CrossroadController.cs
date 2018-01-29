@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
 using UnityEngine;
@@ -133,7 +134,7 @@ public class CrossroadController : MonoBehaviour {
         {
             
             String myJson = System.Text.Encoding.Default.GetString(msg.Content);
-            Debug.Log(myJson);
+            //Debug.Log(myJson);
             JObject json = JObject.Parse(myJson);
 
             String action = json["action"].ToString();
@@ -220,7 +221,6 @@ public class CrossroadController : MonoBehaviour {
                     ChangeLights("green");
                     break;
                 case "lights_changes_to_yellow":
-                    Debug.Log("LOOOOL");
                     ChangeLights("yellow");
                     break;
                 case "lights_changes_to_red":
@@ -270,7 +270,7 @@ public class CrossroadController : MonoBehaviour {
             case "left":
                 if (fasterTurns.Contains(go.name))
                 {
-                    yield return new WaitForSeconds(0.5f);
+                    yield return new WaitForSeconds(1);
                     for (int i = 0; i < 10; i++)
                     {
                         go.transform.Rotate(Vector3.up, -4.5f);

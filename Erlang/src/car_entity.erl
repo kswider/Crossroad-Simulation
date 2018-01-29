@@ -63,9 +63,9 @@ handle_call({do_you_turn_left}, _From, State) ->
   if
     (State#car.destination == left) and (State#car.position#position.look_x /= 0) and (State#car.position#position.look_y /= 0) ->
       erlang:cancel_timer(State#car.timer_ref),
+      simulation_event_stream:notify(car,State#car.pid,faster_turn_left,State),
       NState = next_position(State),
       TimerRef = erlang:start_timer(State#car.world_parameters#world_parameters.car_speed, State#car.pid, make_next_step),
-      simulation_event_stream:notify(car,State#car.pid,faster_turn_left,State),
       {reply, true, NState#car{timer_ref = TimerRef}};
     true ->
       {reply, false, State}
