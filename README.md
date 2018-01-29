@@ -76,3 +76,8 @@ Cars are spawned on the map in pre-defined points. Every N-seconds car is trying
 To avoid dead locks all those steps are performed in a process separate from car process. After all required steps are performed process sends cast message to car process and kills itself.
 
 Pedestrians are very similar to cars but there can be more then one pedestrian on single map square. Therefore pedestrians are not aware of each other but they check if they can safely enter crossroad.
+
+## Final effects ##
+
+![alt text](https://github.com/kswider/Crossroad-Simulation/blob/master/Docs/1.png)
+![alt text](https://github.com/kswider/Crossroad-Simulation/blob/master/Docs/2.png)
