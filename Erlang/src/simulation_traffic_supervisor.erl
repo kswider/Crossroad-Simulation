@@ -14,7 +14,7 @@
 -include("../include/records.hrl").
 
 %% API
--export([start_link/1,generate_cars/2,kill_children/0,spawn_car/3]).
+-export([start_link/1,kill_children/0,spawn_car/3]).
 
 %% Supervisor callbacks
 -export([init/1]).
@@ -24,10 +24,6 @@
 %%%===================================================================
 %%% API functions
 %%%===================================================================
-generate_cars(_WorldParameters,0) -> done;
-generate_cars(WorldParameters,Amount) ->
-  spawn(?MODULE,spawn_car,[WorldParameters, gen_server:call(uuid_provider,next_car), common_defs:get_random(car,WorldParameters)]),
-  generate_cars(WorldParameters,Amount-1).
 
 kill_children() -> common_defs:stop_children(?MODULE).
 
