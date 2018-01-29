@@ -86,7 +86,6 @@ public class CarController : MonoBehaviour
 
     private IEnumerator RotateCarLeftFasterCoroutine()
     {
-        yield return new WaitForSeconds(0.5f);
         for (int i = 0; i < 10; i++)
         {
             transform.Rotate(Vector3.up, -4.5f);
