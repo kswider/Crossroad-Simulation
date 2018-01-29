@@ -97,6 +97,10 @@ handle_event({car,Pid,turn_right,_CarState}, State) ->
   Pid_string = erlang:list_to_binary(erlang:pid_to_list(Pid)),
   gen_tcp:send(State#state.socket,<<"{\"action\":\"car_turn_right\",\"pid\":\"",Pid_string/binary,"\"}">>),
   {ok, State};
+handle_event({car,Pid,faster_turn_left,_CarState}, State) ->
+  Pid_string = erlang:list_to_binary(erlang:pid_to_list(Pid)),
+  gen_tcp:send(State#state.socket,<<"{\"action\":\"car_faster_turn_left\",\"pid\":\"",Pid_string/binary,"\"}">>),
+  {ok, State};
 
 handle_event({lights,started,_CarState}, State) ->
   %io:format("Lights started ~n"),
