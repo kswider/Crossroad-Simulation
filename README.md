@@ -21,7 +21,8 @@ Invoke following commands in the Erlang shell:
 If you want to start graphical handler for the simulation you need to:
 
 1. Invoke `simulation_controller:start_socket_handler().` in the Erlang shell.
-2. Start Unity build or other program compatible with this simulation.
+2. Start Unity build (`crossroad_linux.x86_64` for unix systems)
+3. Start Socekt in Unity build by pressing button.
 
 Be careful! If you change order of 1 and 2 handler won't work!
 
