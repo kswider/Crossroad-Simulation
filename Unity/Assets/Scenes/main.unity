@@ -4008,9 +4008,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2507dbcb6b2eeff42b602604473c0b69, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  pedestrian: {fileID: 1288764338928420, guid: 51175b917a79d1c4086a9a30be5f2bab, type: 2}
-  car: {fileID: 1831527202876982, guid: a493bb4f3d27d294a9a3a63ae99102ed, type: 2}
-  carTurningLeft: {fileID: 1305957865822464, guid: 0c7d7b0e9a23678438ebf3573c71541f,
+  pedestrian: {fileID: 1188869126329264, guid: 51175b917a79d1c4086a9a30be5f2bab, type: 2}
+  car: {fileID: 1341132872151684, guid: a493bb4f3d27d294a9a3a63ae99102ed, type: 2}
+  carTurningLeft: {fileID: 1357857551821756, guid: 0c7d7b0e9a23678438ebf3573c71541f,
     type: 2}
   connectButton: {fileID: 1554571123}
   exitButton: {fileID: 983013109}

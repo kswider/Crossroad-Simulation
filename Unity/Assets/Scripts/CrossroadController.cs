@@ -3,7 +3,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
 using UnityEngine;
@@ -150,6 +149,7 @@ public class CrossroadController : MonoBehaviour {
                     float x = float.Parse(json["position_x"].ToString()) * 2;
                     float z = float.Parse(json["position_y"].ToString()) * 2;
                     go.transform.position = new Vector3(x, 0.5f, z);
+                    go.GetComponent<PedestrianController>().OldPosition = new Vector3(x, 0.5f, z);
                     break;
                 case "pedestrian_disappeared":
                     pid = json["pid"].ToString();
@@ -162,7 +162,7 @@ public class CrossroadController : MonoBehaviour {
                     x = float.Parse(json["position_x"].ToString()) * 2;
                     z = float.Parse(json["position_y"].ToString()) * 2;
                     float speed = int.Parse(json["speed"].ToString())/1000;
-                    StartCoroutine(MovePedestrian(go, new Vector3(x, 0.5f, z),speed));
+                    go.GetComponent<PedestrianController>().MovePedestrian(new Vector3(x, 0.5f, z), speed);
                     break;
                 case "car_spawned":
                     pid = json["pid"].ToString();
@@ -176,6 +176,7 @@ public class CrossroadController : MonoBehaviour {
                         go = GameObject.Instantiate(car);
                     }
                     go.name = pid;
+
                     x = float.Parse(json["position_x"].ToString()) * 2;
                     z = float.Parse(json["position_y"].ToString()) * 2;
                     if (z == 16f)
@@ -185,9 +186,9 @@ public class CrossroadController : MonoBehaviour {
                     else if (z == 14f)
                         go.transform.Rotate(0, 90, 0);
                     go.transform.position = new Vector3(x, 0.375f, z);
-
+                    go.GetComponent<CarController>().OldPosition = new Vector3(x, 0.375f, z);
                     turn = json["turn"].ToString();
-                    StartCoroutine(StartIndicator(go,turn));
+                    go.GetComponent<CarController>().StartIndicator(turn);
                     break;
                 case "car_disappeared":
                     pid = json["pid"].ToString();
@@ -201,17 +202,20 @@ public class CrossroadController : MonoBehaviour {
                     speed = int.Parse(json["speed"].ToString()) / 1000;
                     x = float.Parse(json["position_x"].ToString()) * 2;
                     z = float.Parse(json["position_y"].ToString()) * 2;
-                    StartCoroutine(MoveCar(go, new Vector3(x, 0.375f, z),speed));
+                    go.GetComponent<CarController>().MoveCar(new Vector3(x, 0.375f, z), speed);
                     break;
                 case "car_turn_left":
                     pid = json["pid"].ToString();
                     go = GameObject.Find(pid);
-                    StartCoroutine(RotateCar(go, "left"));
+                    if (fasterTurns.Contains(pid))
+                        go.GetComponent<CarController>().RotateCar("left", true);
+                    else
+                        go.GetComponent<CarController>().RotateCar("left", false);
                     break;
                 case "car_turn_right":
                     pid = json["pid"].ToString();
                     go = GameObject.Find(pid);
-                    StartCoroutine(RotateCar(go, "right"));
+                    go.GetComponent<CarController>().RotateCar("right");
                     break;
                 case "car_faster_turn_left":
                     pid = json["pid"].ToString();
@@ -226,99 +230,6 @@ public class CrossroadController : MonoBehaviour {
                 case "lights_changes_to_red":
                     ChangeLights("red");
                     break;
-            }
-        }
-    }
-
-    private IEnumerator StartIndicator(GameObject go,string which)
-    {
-        switch (which)
-        {
-            case "left":
-                while(go != null)
-                {
-                    go.transform.Find("Body/LeftIndicators/FrontIndicator").GetComponent<MeshRenderer>().material = yellow_light;
-                    go.transform.Find("Body/LeftIndicators/SideIndicator").GetComponent<MeshRenderer>().material = yellow_light;
-                    go.transform.Find("Body/LeftIndicators/BackIndicator").GetComponent<MeshRenderer>().material = yellow_light;
-                    yield return new WaitForSeconds(0.33f);
-                    go.transform.Find("Body/LeftIndicators/FrontIndicator").GetComponent<MeshRenderer>().material = no_light;
-                    go.transform.Find("Body/LeftIndicators/SideIndicator").GetComponent<MeshRenderer>().material = no_light;
-                    go.transform.Find("Body/LeftIndicators/BackIndicator").GetComponent<MeshRenderer>().material = no_light;
-                    yield return new WaitForSeconds(0.33f);
-                }
-                break;
-            case "right":
-                while (go != null)
-                {
-                    go.transform.Find("Body/RightIndicators/FrontIndicator").GetComponent<MeshRenderer>().material = yellow_light;
-                    go.transform.Find("Body/RightIndicators/SideIndicator").GetComponent<MeshRenderer>().material = yellow_light;
-                    go.transform.Find("Body/RightIndicators/BackIndicator").GetComponent<MeshRenderer>().material = yellow_light;
-                    yield return new WaitForSeconds(0.5f);
-                    go.transform.Find("Body/RightIndicators/FrontIndicator").GetComponent<MeshRenderer>().material = no_light;
-                    go.transform.Find("Body/RightIndicators/SideIndicator").GetComponent<MeshRenderer>().material = no_light;
-                    go.transform.Find("Body/RightIndicators/BackIndicator").GetComponent<MeshRenderer>().material = no_light;
-                    yield return new WaitForSeconds(0.5f);
-                }
-                break;
-        }
-    }
-
-    private IEnumerator RotateCar(GameObject go, string turn)
-    {
-        switch (turn)
-        {
-            case "left":
-                if (fasterTurns.Contains(go.name))
-                {
-                    yield return new WaitForSeconds(1);
-                    for (int i = 0; i < 10; i++)
-                    {
-                        go.transform.Rotate(Vector3.up, -4.5f);
-                        yield return new WaitForSeconds(0.025f);
-                    }
-                }
-                else
-                {
-                    yield return new WaitForSeconds(1);
-                    for (int i = 0; i < 10; i++)
-                    {
-                        go.transform.Rotate(Vector3.up, -4.5f);
-                        yield return new WaitForSeconds(0.05f);
-                    }
-                }
-                break;
-            case "right":
-                yield return new WaitForSeconds(1);
-                for (int i = 0; i < 10; i++)
-                {
-                    go.transform.Rotate(Vector3.up, 9);
-                    yield return new WaitForSeconds(0.1f);
-                }
-                break;
-        }
-    }
-
-    private IEnumerator MovePedestrian(GameObject obj,Vector3 newPosition,float speed)
-    {
-        Vector3 distance = (newPosition - obj.transform.position) / (10*speed);
-        for (int i = 0; i < 10 * speed; i++)
-        {
-            if (obj != null)
-            {
-                obj.transform.position += distance;
-                yield return new WaitForSeconds(0.1f);
-            }
-        }
-    }
-    private IEnumerator MoveCar(GameObject obj, Vector3 newPosition,float speed)
-    {
-        Vector3 distance = (newPosition - obj.transform.position) / (10 * speed);
-        for (int i = 0; i < 10*speed; i++)
-        {
-            if (obj != null)
-            {
-                obj.transform.position += distance;
-                yield return new WaitForSeconds(0.1f);
             }
         }
     }

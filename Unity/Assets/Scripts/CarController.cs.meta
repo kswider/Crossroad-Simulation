@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: ca27f092a523e2148a82c20a053f66a5
+timeCreated: 1517247630
+licenseType: Free
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - no_light: {fileID: 2100000, guid: e620b251661f2784fac4fdf72602cf70, type: 2}
+  - yellow_light: {fileID: 2100000, guid: 5e2a7403be9fd6e409f5a4b62f04cfcf, type: 2}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
