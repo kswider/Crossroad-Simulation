@@ -77,7 +77,7 @@ generate([Pos|T],WorldParameters,NState) ->
   Cars = supervisor:which_children(simulation_traffic_supervisor),
   case common_defs:ask_cars_for_position(Cars,Pos#position.x,Pos#position.y,self()) of
     free ->
-      Dest = common_defs:random_directions(4),
+      Dest = common_defs:random_direction(),
       UUID = gen_server:call(uuid_provider,next_car),
       Car = { {car, UUID},
         {car_entity, start_link, [{WorldParameters,{Pos,Dest}}]},
