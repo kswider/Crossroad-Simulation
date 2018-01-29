@@ -27,7 +27,7 @@ Be careful! If you change order of 1 and 2 handler won't work!
 
 ### Changing world parameters ###
 
-You can change some of simulation world parameters. Of course there are reasonable default values provided. Parameters are changed by invoking 'application:set_env(crossroad_simulation,Param,Val) in erlang shell.  
+You can change some of simulation world parameters. Of course there are reasonable default values provided. Parameters are changed by invoking 'application:set_env(crossroad_simulation,Param,Val) in erlang shell.
 
 Avaliable parameters are:
 - `main_light_time` - time of green light on main road in milisecons
@@ -41,9 +41,9 @@ Avaliable parameters are:
 ### Useful commands ###
 
 Commands can be invoked in Erlang shell when simulation is started. 
-1. `simulation_controller:generate_pedestrians(N)` - generates N random pedestrians.
-2. `simulation_controller:generate_cars(N)` - generates N random cars.
-3. `simulation_controller:stop_simulation()` - stops simulation
+1. `simulation_controller:generate_pedestrians(N).` - generates N random pedestrians.
+2. `simulation_controller:generate_cars(N).` - generates N random cars.
+3. `simulation_controller:stop_simulation().` - stops simulation
 
 ## Project architecture ##
 
@@ -59,7 +59,8 @@ Commands can be invoked in Erlang shell when simulation is started.
       - `traffic_supervisor` - Supervisor responsible for all cars on the map.
         - `car_entity` - gen_server server responsible for single car on the map.
       - `light_entity` - gen_state server responsible for changing lights periodicly and adapting them to the traffic on the road.
-      - `UUIDProvider` - gen_server server responsible providing unique ID for new processes.
+      - `UUIDProvider` - gen_server server responsible for providing unique ID for new processes.
+      - `cars_generator` - gen_server server responsible for generating cars on the map so they never spawn on each other.
 
 ## How it works ##
 

@@ -26,7 +26,7 @@
 %%%===================================================================
 start_simulation(WorldParameters) ->
   start_lights(WorldParameters),
-  simulation_traffic_supervisor:generate_cars(WorldParameters,WorldParameters#world_parameters.cars_start_amount),
+  generate_cars(WorldParameters,WorldParameters#world_parameters.cars_start_amount),
   simulation_pedestrians_supervisor:generate_pedestrians(WorldParameters,WorldParameters#world_parameters.pedestrian_start_amount),
   done.
 stop_simulation() ->
@@ -36,8 +36,12 @@ stop_simulation() ->
   done.
 generate_pedestrians(WorldParameters,Amount) ->
   simulation_pedestrians_supervisor:generate_pedestrians(WorldParameters,Amount).
+
+generate_cars(_WorldParameters,0) -> done;
 generate_cars(WorldParameters,Amount) ->
-  simulation_traffic_supervisor:generate_cars(WorldParameters,Amount).
+  Pos = lists:nth(rand:uniform(4),common_defs:get_start_points(car,WorldParameters)),
+  gen_server:cast(cars_generator,{add,Pos}),
+  generate_cars(WorldParameters,Amount-1).
 
 start_link(WorldParameters) ->
   supervisor:start_link({local, ?SERVER}, ?MODULE, [WorldParameters]).
@@ -58,6 +62,12 @@ init(WorldParameters) ->
   Shutdown = brutal_kill,
   Type = supervisor,
 
+  CarsGenerator = {
+    cars_generator,
+    {cars_generator, start_link, Args},
+    Restart, Shutdown, worker,
+    [ cars_generator ]
+  },
   UUIDProvider = {
     uuid_provider,
     {uuid_provider, start_link, []},
@@ -81,7 +91,7 @@ init(WorldParameters) ->
     temporary, brutal_kill, worker,
     [ light_entity ]},
 
-  {ok, {SupFlags, [UUIDProvider, PedestriansSupervisor, TrafficSupervisor, Light]}}.
+  {ok, {SupFlags, [UUIDProvider, CarsGenerator, PedestriansSupervisor, TrafficSupervisor, Light]}}.
 
 %%%===================================================================
 %%% Internal functions
